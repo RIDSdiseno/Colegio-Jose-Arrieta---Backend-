@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Noticia {
+  id         String   @id @default(uuid())
+  titulo     String
+  slug       String   @unique
+  extracto   String?
+  contenido  String?
+  imagen     String?
+  categoria  String   @default("General")
+  fecha      DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("noticias")
+}
+
+model Testimonio {
+  id        String   @id @default(uuid())
+  nombre    String
+  cargo     String?
+  texto     String
+  estrellas Int      @default(5)
+  color     String   @default("#1e3a5f")
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("testimonios")
+}
+
+model Galeria {
+  id        String   @id @default(uuid())
+  url       String
+  caption   String?
+  orden     Int      @default(0)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("galeria")
+}
