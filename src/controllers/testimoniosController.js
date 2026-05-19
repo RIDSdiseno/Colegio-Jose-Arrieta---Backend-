@@ -34,9 +34,19 @@ async function crearTestimonio(req, res, next) {
       return res.status(400).json({ error: "nombre y texto son obligatorios" });
     }
 
-    const testimonio = await prisma.testimonio.create({
-      data: { nombre, cargo, texto, estrellas, color, activo },
-    });
+    const data = { nombre, texto };
+    if (cargo !== undefined) data.cargo = cargo;
+    if (color !== undefined) data.color = color;
+    if (activo !== undefined) data.activo = Boolean(activo);
+    if (estrellas !== undefined) {
+      const stars = parseInt(estrellas);
+      if (isNaN(stars) || stars < 1 || stars > 5) {
+        return res.status(400).json({ error: "estrellas debe ser un número entre 1 y 5" });
+      }
+      data.estrellas = stars;
+    }
+
+    const testimonio = await prisma.testimonio.create({ data });
     res.status(201).json(testimonio);
   } catch (err) {
     next(err);
@@ -48,9 +58,27 @@ async function actualizarTestimonio(req, res, next) {
   try {
     const { nombre, cargo, texto, estrellas, color, activo } = req.body;
 
+    const data = {};
+    if (nombre !== undefined) data.nombre = nombre;
+    if (cargo !== undefined) data.cargo = cargo;
+    if (texto !== undefined) data.texto = texto;
+    if (color !== undefined) data.color = color;
+    if (activo !== undefined) data.activo = Boolean(activo);
+    if (estrellas !== undefined) {
+      const stars = parseInt(estrellas);
+      if (isNaN(stars) || stars < 1 || stars > 5) {
+        return res.status(400).json({ error: "estrellas debe ser un número entre 1 y 5" });
+      }
+      data.estrellas = stars;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: "No se enviaron campos para actualizar" });
+    }
+
     const testimonio = await prisma.testimonio.update({
       where: { id: req.params.id },
-      data: { nombre, cargo, texto, estrellas, color, activo },
+      data,
     });
     res.json(testimonio);
   } catch (err) {

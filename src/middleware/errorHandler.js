@@ -18,7 +18,9 @@ function errorHandler(err, req, res, next) {
   }
 
   const status = err.status || 500;
-  res.status(status).json({ error: err.message || "Error interno del servidor" });
+  // Solo exponer el mensaje si fue un error intencional de la API (tiene .status)
+  const safeMessage = err.status ? err.message : "Error interno del servidor";
+  res.status(status).json({ error: safeMessage || "Error interno del servidor" });
 }
 
 module.exports = errorHandler;

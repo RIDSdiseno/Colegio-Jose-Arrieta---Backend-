@@ -22,9 +22,16 @@ async function crearFoto(req, res, next) {
       return res.status(400).json({ error: "url es obligatoria" });
     }
 
-    const foto = await prisma.galeria.create({
-      data: { url, caption, orden, activo },
-    });
+    const data = { url };
+    if (caption !== undefined) data.caption = caption;
+    if (activo !== undefined) data.activo = Boolean(activo);
+    if (orden !== undefined) {
+      const n = parseInt(orden);
+      if (isNaN(n)) return res.status(400).json({ error: "orden debe ser un número" });
+      data.orden = n;
+    }
+
+    const foto = await prisma.galeria.create({ data });
     res.status(201).json(foto);
   } catch (err) {
     next(err);
@@ -36,9 +43,23 @@ async function actualizarFoto(req, res, next) {
   try {
     const { url, caption, orden, activo } = req.body;
 
+    const data = {};
+    if (url !== undefined) data.url = url;
+    if (caption !== undefined) data.caption = caption;
+    if (activo !== undefined) data.activo = Boolean(activo);
+    if (orden !== undefined) {
+      const n = parseInt(orden);
+      if (isNaN(n)) return res.status(400).json({ error: "orden debe ser un número" });
+      data.orden = n;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: "No se enviaron campos para actualizar" });
+    }
+
     const foto = await prisma.galeria.update({
       where: { id: req.params.id },
-      data: { url, caption, orden, activo },
+      data,
     });
     res.json(foto);
   } catch (err) {
