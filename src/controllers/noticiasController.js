@@ -28,6 +28,19 @@ async function getNoticias(req, res, next) {
   }
 }
 
+// GET /api/noticias/id/:id (admin)
+async function getNoticiaById(req, res, next) {
+  try {
+    const noticia = await prisma.noticia.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!noticia) return res.status(404).json({ error: "Noticia no encontrada" });
+    res.json(noticia);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // GET /api/noticias/:slug
 async function getNoticiaPorSlug(req, res, next) {
   try {
@@ -114,4 +127,4 @@ async function eliminarNoticia(req, res, next) {
   }
 }
 
-module.exports = { getNoticias, getNoticiaPorSlug, crearNoticia, actualizarNoticia, eliminarNoticia };
+module.exports = { getNoticias, getNoticiaPorSlug, getNoticiaById, crearNoticia, actualizarNoticia, eliminarNoticia };
