@@ -8,11 +8,10 @@ function requireAdmin(req, res, next) {
     return res.status(500).json({ error: "ADMIN_SECRET no configurado en el servidor" });
   }
 
-  if (
-    !token ||
-    token.length !== secret.length ||
-    !crypto.timingSafeEqual(Buffer.from(token), Buffer.from(secret))
-  ) {
+  const tokenBuf = Buffer.from(token || "");
+  const secretBuf = Buffer.from(secret);
+
+  if (!token || tokenBuf.length !== secretBuf.length || !crypto.timingSafeEqual(tokenBuf, secretBuf)) {
     return res.status(401).json({ error: "No autorizado" });
   }
 

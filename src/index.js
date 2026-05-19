@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const prisma = require("./lib/prisma");
 const errorHandler = require("./middleware/errorHandler");
 
@@ -18,7 +19,10 @@ if (!allowedOrigin) {
 }
 app.use(cors({ origin: allowedOrigin || false }));
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+
+// Rate limiting — 120 peticiones por minuto por IP
+app.use(rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false }));
 
 // Health check
 app.get("/", (req, res) => res.json({ status: "ok", message: "API Colegio José Arrieta" }));
@@ -35,6 +39,13 @@ app.use((req, res) => {
 
 // Error handler
 app.use(errorHandler);
+
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  console.log("SIGTERM recibido, cerrando servidor...");
+  await prisma.$disconnect();
+  process.exit(0);
+});
 
 // Iniciar servidor solo si la BD responde
 prisma.$connect()

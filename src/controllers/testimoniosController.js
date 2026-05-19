@@ -1,5 +1,7 @@
 const prisma = require("../lib/prisma");
 
+const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
+
 // GET /api/testimonios
 async function getTestimonios(req, res, next) {
   try {
@@ -36,7 +38,10 @@ async function crearTestimonio(req, res, next) {
 
     const data = { nombre, texto };
     if (cargo !== undefined) data.cargo = cargo;
-    if (color !== undefined) data.color = color;
+    if (color !== undefined) {
+      if (!HEX_COLOR.test(color)) return res.status(400).json({ error: "color debe ser un valor hex válido (ej: #1e3a5f)" });
+      data.color = color;
+    }
     if (activo !== undefined) data.activo = Boolean(activo);
     if (estrellas !== undefined) {
       const stars = parseInt(estrellas);
@@ -62,7 +67,10 @@ async function actualizarTestimonio(req, res, next) {
     if (nombre !== undefined) data.nombre = nombre;
     if (cargo !== undefined) data.cargo = cargo;
     if (texto !== undefined) data.texto = texto;
-    if (color !== undefined) data.color = color;
+    if (color !== undefined) {
+      if (!HEX_COLOR.test(color)) return res.status(400).json({ error: "color debe ser un valor hex válido (ej: #1e3a5f)" });
+      data.color = color;
+    }
     if (activo !== undefined) data.activo = Boolean(activo);
     if (estrellas !== undefined) {
       const stars = parseInt(estrellas);

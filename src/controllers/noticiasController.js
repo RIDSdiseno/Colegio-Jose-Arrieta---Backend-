@@ -1,11 +1,20 @@
 const prisma = require("../lib/prisma");
 
+function isValidHttpsUrl(str) {
+  try {
+    const u = new URL(str);
+    return u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 // GET /api/noticias
 async function getNoticias(req, res, next) {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 6));
-    const search = req.query.search || "";
+    const search = (req.query.search || "").slice(0, 100);
     const skip = (page - 1) * limit;
 
     const where = search
@@ -66,7 +75,10 @@ async function crearNoticia(req, res, next) {
     const data = { titulo, slug };
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
-    if (imagen !== undefined) data.imagen = imagen;
+    if (imagen !== undefined) {
+      if (imagen !== "" && !isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
+      data.imagen = imagen;
+    }
     if (categoria !== undefined) data.categoria = categoria;
     if (fecha !== undefined) {
       const parsed = new Date(fecha);
@@ -93,7 +105,10 @@ async function actualizarNoticia(req, res, next) {
     if (slug !== undefined) data.slug = slug;
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
-    if (imagen !== undefined) data.imagen = imagen;
+    if (imagen !== undefined) {
+      if (imagen !== "" && !isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
+      data.imagen = imagen;
+    }
     if (categoria !== undefined) data.categoria = categoria;
     if (fecha !== undefined) {
       const parsed = new Date(fecha);
