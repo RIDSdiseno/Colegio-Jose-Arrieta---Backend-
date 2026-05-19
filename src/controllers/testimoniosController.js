@@ -1,6 +1,5 @@
 const prisma = require("../lib/prisma");
-
-const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
+const { HEX_COLOR } = require("../lib/validators");
 
 // GET /api/testimonios
 async function getTestimonios(req, res, next) {

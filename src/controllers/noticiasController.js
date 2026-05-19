@@ -1,13 +1,5 @@
 const prisma = require("../lib/prisma");
-
-function isValidHttpsUrl(str) {
-  try {
-    const u = new URL(str);
-    return u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+const { isValidHttpsUrl } = require("../lib/validators");
 
 // GET /api/noticias
 async function getNoticias(req, res, next) {
@@ -76,7 +68,7 @@ async function crearNoticia(req, res, next) {
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
     if (imagen !== undefined) {
-      if (imagen !== "" && !isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
+      if (!isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
       data.imagen = imagen;
     }
     if (categoria !== undefined) data.categoria = categoria;
@@ -106,7 +98,7 @@ async function actualizarNoticia(req, res, next) {
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
     if (imagen !== undefined) {
-      if (imagen !== "" && !isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
+      if (!isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
       data.imagen = imagen;
     }
     if (categoria !== undefined) data.categoria = categoria;

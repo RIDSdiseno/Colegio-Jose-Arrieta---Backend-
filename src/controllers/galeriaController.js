@@ -1,13 +1,5 @@
 const prisma = require("../lib/prisma");
-
-function isValidHttpsUrl(str) {
-  try {
-    const u = new URL(str);
-    return u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+const { isValidHttpsUrl } = require("../lib/validators");
 
 // GET /api/galeria
 async function getGaleria(req, res, next) {
