@@ -28,7 +28,15 @@ async function getTestimoniosAdmin(req, res, next) {
 // POST /api/testimonios
 async function crearTestimonio(req, res, next) {
   try {
-    const testimonio = await prisma.testimonio.create({ data: req.body });
+    const { nombre, cargo, texto, estrellas, color, activo } = req.body;
+
+    if (!nombre || !texto) {
+      return res.status(400).json({ error: "nombre y texto son obligatorios" });
+    }
+
+    const testimonio = await prisma.testimonio.create({
+      data: { nombre, cargo, texto, estrellas, color, activo },
+    });
     res.status(201).json(testimonio);
   } catch (err) {
     next(err);
@@ -38,9 +46,11 @@ async function crearTestimonio(req, res, next) {
 // PUT /api/testimonios/:id
 async function actualizarTestimonio(req, res, next) {
   try {
+    const { nombre, cargo, texto, estrellas, color, activo } = req.body;
+
     const testimonio = await prisma.testimonio.update({
       where: { id: req.params.id },
-      data: req.body,
+      data: { nombre, cargo, texto, estrellas, color, activo },
     });
     res.json(testimonio);
   } catch (err) {

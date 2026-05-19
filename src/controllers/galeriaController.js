@@ -16,7 +16,15 @@ async function getGaleria(req, res, next) {
 // POST /api/galeria
 async function crearFoto(req, res, next) {
   try {
-    const foto = await prisma.galeria.create({ data: req.body });
+    const { url, caption, orden, activo } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ error: "url es obligatoria" });
+    }
+
+    const foto = await prisma.galeria.create({
+      data: { url, caption, orden, activo },
+    });
     res.status(201).json(foto);
   } catch (err) {
     next(err);
@@ -26,9 +34,11 @@ async function crearFoto(req, res, next) {
 // PUT /api/galeria/:id
 async function actualizarFoto(req, res, next) {
   try {
+    const { url, caption, orden, activo } = req.body;
+
     const foto = await prisma.galeria.update({
       where: { id: req.params.id },
-      data: req.body,
+      data: { url, caption, orden, activo },
     });
     res.json(foto);
   } catch (err) {

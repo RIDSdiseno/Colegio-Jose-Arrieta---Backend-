@@ -47,7 +47,15 @@ async function getNoticiaPorSlug(req, res, next) {
 // POST /api/noticias
 async function crearNoticia(req, res, next) {
   try {
-    const noticia = await prisma.noticia.create({ data: req.body });
+    const { titulo, slug, extracto, contenido, imagen, categoria, fecha } = req.body;
+
+    if (!titulo || !slug) {
+      return res.status(400).json({ error: "titulo y slug son obligatorios" });
+    }
+
+    const noticia = await prisma.noticia.create({
+      data: { titulo, slug, extracto, contenido, imagen, categoria, fecha },
+    });
     res.status(201).json(noticia);
   } catch (err) {
     next(err);
@@ -57,9 +65,11 @@ async function crearNoticia(req, res, next) {
 // PUT /api/noticias/:id
 async function actualizarNoticia(req, res, next) {
   try {
+    const { titulo, slug, extracto, contenido, imagen, categoria, fecha } = req.body;
+
     const noticia = await prisma.noticia.update({
       where: { id: req.params.id },
-      data: req.body,
+      data: { titulo, slug, extracto, contenido, imagen, categoria, fecha },
     });
     res.json(noticia);
   } catch (err) {

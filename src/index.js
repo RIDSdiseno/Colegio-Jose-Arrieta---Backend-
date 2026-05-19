@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const prisma = require("./lib/prisma");
 const errorHandler = require("./middleware/errorHandler");
 
 const noticiasRouter = require("./routes/noticias");
@@ -24,6 +25,15 @@ app.use("/api/galeria", galeriaRouter);
 // Error handler
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+// Iniciar servidor solo si la BD responde
+prisma.$connect()
+  .then(() => {
+    console.log("Conectado a la base de datos");
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("No se pudo conectar a la base de datos:", err.message);
+    process.exit(1);
+  });
