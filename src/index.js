@@ -8,6 +8,7 @@ const errorHandler = require("./middleware/errorHandler");
 const noticiasRouter = require("./routes/noticias");
 const testimoniosRouter = require("./routes/testimonios");
 const galeriaRouter = require("./routes/galeria");
+const albumsRouter = require("./routes/albums");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -31,6 +32,7 @@ app.get("/", (req, res) => res.json({ status: "ok", message: "API Colegio José 
 app.use("/api/noticias", noticiasRouter);
 app.use("/api/testimonios", testimoniosRouter);
 app.use("/api/galeria", galeriaRouter);
+app.use("/api/albums", albumsRouter);
 
 // 404 para rutas no encontradas
 app.use((req, res) => {

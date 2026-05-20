@@ -36,14 +36,28 @@ model Testimonio {
   @@map("testimonios")
 }
 
-model Galeria {
+model Album {
+  id          String      @id @default(uuid())
+  titulo      String
+  descripcion String?
+  portada     String?
+  orden       Int         @default(0)
+  activo      Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  fotos       FotoAlbum[]
+
+  @@map("albums")
+}
+
+model FotoAlbum {
   id        String   @id @default(uuid())
   url       String
   caption   String?
   orden     Int      @default(0)
-  activo    Boolean  @default(true)
+  albumId   String   @map("album_id")
+  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("galeria")
+  @@map("fotos_album")
 }
