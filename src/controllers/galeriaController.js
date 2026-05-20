@@ -14,6 +14,17 @@ async function getGaleria(req, res, next) {
   }
 }
 
+// GET /api/galeria/id/:id (admin)
+async function getFotoById(req, res, next) {
+  try {
+    const foto = await prisma.galeria.findUnique({ where: { id: req.params.id } });
+    if (!foto) return res.status(404).json({ error: "Foto no encontrada" });
+    res.json(foto);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // GET /api/galeria/admin
 async function getGaleriaAdmin(req, res, next) {
   try {
@@ -80,4 +91,4 @@ async function eliminarFoto(req, res, next) {
   }
 }
 
-module.exports = { getGaleria, getGaleriaAdmin, crearFoto, actualizarFoto, eliminarFoto };
+module.exports = { getGaleria, getFotoById, getGaleriaAdmin, crearFoto, actualizarFoto, eliminarFoto };
