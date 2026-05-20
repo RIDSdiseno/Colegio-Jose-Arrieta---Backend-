@@ -90,17 +90,13 @@ async function crearNoticia(req, res, next) {
 // PUT /api/noticias/:id
 async function actualizarNoticia(req, res, next) {
   try {
-    const { titulo, slug, extracto, contenido, imagen, categoria, fecha } = req.body;
+    const { titulo, slug, extracto, contenido, categoria, fecha } = req.body;
 
     const data = {};
     if (titulo !== undefined) data.titulo = titulo;
     if (slug !== undefined) data.slug = slug;
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
-    if (imagen !== undefined) {
-      if (!isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
-      data.imagen = imagen;
-    }
     if (categoria !== undefined) data.categoria = categoria;
     if (fecha !== undefined) {
       const parsed = new Date(fecha);
@@ -108,6 +104,17 @@ async function actualizarNoticia(req, res, next) {
         return res.status(400).json({ error: "fecha no es una fecha válida" });
       }
       data.fecha = parsed;
+    }
+
+    // Permitir borrar imagen enviando null o string vacío
+    if ("imagen" in req.body) {
+      const img = req.body.imagen;
+      if (img === null || img === "") {
+        data.imagen = null;
+      } else {
+        if (!isValidHttpsUrl(img)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
+        data.imagen = img;
+      }
     }
 
     if (Object.keys(data).length === 0) {

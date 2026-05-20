@@ -5,7 +5,7 @@ function requireAdmin(req, res, next) {
   const secret = process.env.ADMIN_SECRET;
 
   if (!secret) {
-    return res.status(500).json({ error: "ADMIN_SECRET no configurado en el servidor" });
+    return res.status(401).json({ error: "No autorizado" });
   }
 
   const tokenBuf = Buffer.from(token || "");
