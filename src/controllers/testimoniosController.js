@@ -14,6 +14,19 @@ async function getTestimonios(req, res, next) {
   }
 }
 
+// GET /api/testimonios/:id (admin)
+async function getTestimonioById(req, res, next) {
+  try {
+    const testimonio = await prisma.testimonio.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!testimonio) return res.status(404).json({ error: "Testimonio no encontrado" });
+    res.json(testimonio);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // GET /api/testimonios/admin (todos, incluye inactivos)
 async function getTestimoniosAdmin(req, res, next) {
   try {
@@ -103,4 +116,4 @@ async function eliminarTestimonio(req, res, next) {
   }
 }
 
-module.exports = { getTestimonios, getTestimoniosAdmin, crearTestimonio, actualizarTestimonio, eliminarTestimonio };
+module.exports = { getTestimonios, getTestimonioById, getTestimoniosAdmin, crearTestimonio, actualizarTestimonio, eliminarTestimonio };

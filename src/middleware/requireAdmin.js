@@ -11,7 +11,13 @@ function requireAdmin(req, res, next) {
   const tokenBuf = Buffer.from(token || "");
   const secretBuf = Buffer.from(secret);
 
-  if (!token || tokenBuf.length !== secretBuf.length || !crypto.timingSafeEqual(tokenBuf, secretBuf)) {
+  let valid = false;
+  try {
+    valid = tokenBuf.byteLength === secretBuf.byteLength &&
+            crypto.timingSafeEqual(tokenBuf, secretBuf);
+  } catch (_) { /* longitudes distintas */ }
+
+  if (!token || !valid) {
     return res.status(401).json({ error: "No autorizado" });
   }
 
