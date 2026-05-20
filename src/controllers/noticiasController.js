@@ -67,7 +67,7 @@ async function crearNoticia(req, res, next) {
     const data = { titulo, slug };
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
-    if (imagen !== undefined) {
+    if (imagen !== undefined && imagen !== null && imagen !== "") {
       if (!isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
       data.imagen = imagen;
     }
