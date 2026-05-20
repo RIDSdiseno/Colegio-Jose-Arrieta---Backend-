@@ -18,6 +18,7 @@ const allowedOrigin = process.env.FRONTEND_URL;
 if (!allowedOrigin) {
   console.warn("ADVERTENCIA: FRONTEND_URL no definido — CORS bloqueará peticiones de origen cruzado");
 }
+app.set("trust proxy", 1);
 app.use(cors({ origin: allowedOrigin || false }));
 
 app.use(express.json({ limit: "1mb" }));
