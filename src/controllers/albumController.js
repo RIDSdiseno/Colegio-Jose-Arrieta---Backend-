@@ -1,5 +1,6 @@
 const prisma = require("../lib/prisma");
 const { isValidHttpsUrl } = require("../lib/validators");
+const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 // GET /api/albums — público, solo activos
 async function getAlbums(req, res, next) {
@@ -96,8 +97,7 @@ async function actualizarAlbum(req, res, next) {
     if (orden !== undefined) data.orden = parseInt(orden) || 0;
     if (activo !== undefined) data.activo = Boolean(activo);
 
-    if (Object.keys(data).length === 0)
-      return res.status(400).json({ error: "No se enviaron campos para actualizar" });
+    if (!assertHasFields(data, res)) return;
 
     const album = await prisma.album.update({ where: { id: req.params.id }, data });
     res.json(album);
@@ -107,14 +107,7 @@ async function actualizarAlbum(req, res, next) {
 }
 
 // DELETE /api/albums/:id — admin (cascade borra fotos)
-async function eliminarAlbum(req, res, next) {
-  try {
-    await prisma.album.delete({ where: { id: req.params.id } });
-    res.json({ message: "Álbum eliminado" });
-  } catch (err) {
-    next(err);
-  }
-}
+const eliminarAlbum = makeDeleteHandler("album", "Álbum");
 
 // POST /api/albums/:id/fotos — admin
 async function agregarFoto(req, res, next) {
@@ -138,14 +131,7 @@ async function agregarFoto(req, res, next) {
 }
 
 // DELETE /api/albums/fotos/:fotoId — admin
-async function eliminarFoto(req, res, next) {
-  try {
-    await prisma.fotoAlbum.delete({ where: { id: req.params.fotoId } });
-    res.json({ message: "Foto eliminada" });
-  } catch (err) {
-    next(err);
-  }
-}
+const eliminarFoto = makeDeleteHandler("fotoAlbum", "Foto", "fotoId");
 
 module.exports = {
   getAlbums,

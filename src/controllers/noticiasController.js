@@ -1,5 +1,6 @@
 const prisma = require("../lib/prisma");
 const { isValidHttpsUrl } = require("../lib/validators");
+const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 // GET /api/noticias
 async function getNoticias(req, res, next) {
@@ -117,9 +118,7 @@ async function actualizarNoticia(req, res, next) {
       }
     }
 
-    if (Object.keys(data).length === 0) {
-      return res.status(400).json({ error: "No se enviaron campos para actualizar" });
-    }
+    if (!assertHasFields(data, res)) return;
 
     const noticia = await prisma.noticia.update({
       where: { id: req.params.id },
@@ -132,13 +131,6 @@ async function actualizarNoticia(req, res, next) {
 }
 
 // DELETE /api/noticias/:id
-async function eliminarNoticia(req, res, next) {
-  try {
-    await prisma.noticia.delete({ where: { id: req.params.id } });
-    res.json({ message: "Noticia eliminada" });
-  } catch (err) {
-    next(err);
-  }
-}
+const eliminarNoticia = makeDeleteHandler("noticia", "Noticia");
 
 module.exports = { getNoticias, getNoticiaPorSlug, getNoticiaById, crearNoticia, actualizarNoticia, eliminarNoticia };

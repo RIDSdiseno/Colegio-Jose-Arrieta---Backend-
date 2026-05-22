@@ -1,5 +1,6 @@
 const prisma = require("../lib/prisma");
 const { HEX_COLOR } = require("../lib/validators");
+const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 // GET /api/testimonios
 async function getTestimonios(req, res, next) {
@@ -92,9 +93,7 @@ async function actualizarTestimonio(req, res, next) {
       data.estrellas = stars;
     }
 
-    if (Object.keys(data).length === 0) {
-      return res.status(400).json({ error: "No se enviaron campos para actualizar" });
-    }
+    if (!assertHasFields(data, res)) return;
 
     const testimonio = await prisma.testimonio.update({
       where: { id: req.params.id },
@@ -107,13 +106,6 @@ async function actualizarTestimonio(req, res, next) {
 }
 
 // DELETE /api/testimonios/:id
-async function eliminarTestimonio(req, res, next) {
-  try {
-    await prisma.testimonio.delete({ where: { id: req.params.id } });
-    res.json({ message: "Testimonio eliminado" });
-  } catch (err) {
-    next(err);
-  }
-}
+const eliminarTestimonio = makeDeleteHandler("testimonio", "Testimonio");
 
 module.exports = { getTestimonios, getTestimonioById, getTestimoniosAdmin, crearTestimonio, actualizarTestimonio, eliminarTestimonio };
