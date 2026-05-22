@@ -12,13 +12,15 @@ const {
   eliminarFoto,
 } = require("../controllers/albumController");
 
+// Admin (rutas estáticas primero, antes de las paramétricas)
+router.get("/admin", requireAdmin, getAlbumsAdmin);
+router.get("/id/:id", requireAdmin, getAlbumById);
+
 // Públicas
 router.get("/", getAlbums);
 router.get("/:id/fotos", getFotosAlbum);
 
-// Admin
-router.get("/admin", requireAdmin, getAlbumsAdmin);
-router.get("/id/:id", requireAdmin, getAlbumById);
+// Mutaciones admin
 router.post("/", requireAdmin, crearAlbum);
 router.put("/:id", requireAdmin, actualizarAlbum);
 router.post("/:id/fotos", requireAdmin, agregarFoto);
