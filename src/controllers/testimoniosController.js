@@ -1,5 +1,5 @@
 const prisma = require("../lib/prisma");
-const { HEX_COLOR } = require("../lib/validators");
+const { HEX_COLOR, parseEstrellas } = require("../lib/validators");
 const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 // GET /api/testimonios
@@ -57,11 +57,9 @@ async function crearTestimonio(req, res, next) {
     }
     if (activo !== undefined) data.activo = Boolean(activo);
     if (estrellas !== undefined) {
-      const stars = parseInt(estrellas);
-      if (isNaN(stars) || stars < 1 || stars > 5) {
-        return res.status(400).json({ error: "estrellas debe ser un número entre 1 y 5" });
-      }
-      data.estrellas = stars;
+      const result = parseEstrellas(estrellas);
+      if (!result.ok) return res.status(400).json({ error: result.error });
+      data.estrellas = result.value;
     }
 
     const testimonio = await prisma.testimonio.create({ data });
@@ -86,11 +84,9 @@ async function actualizarTestimonio(req, res, next) {
     }
     if (activo !== undefined) data.activo = Boolean(activo);
     if (estrellas !== undefined) {
-      const stars = parseInt(estrellas);
-      if (isNaN(stars) || stars < 1 || stars > 5) {
-        return res.status(400).json({ error: "estrellas debe ser un número entre 1 y 5" });
-      }
-      data.estrellas = stars;
+      const result = parseEstrellas(estrellas);
+      if (!result.ok) return res.status(400).json({ error: result.error });
+      data.estrellas = result.value;
     }
 
     if (!assertHasFields(data, res)) return;

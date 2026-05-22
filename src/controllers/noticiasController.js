@@ -56,6 +56,34 @@ async function getNoticiaPorSlug(req, res, next) {
   }
 }
 
+// GET /api/noticias/:slug/adyacentes
+async function getNoticiasAdyacentes(req, res, next) {
+  try {
+    const noticia = await prisma.noticia.findUnique({
+      where: { slug: req.params.slug },
+      select: { fecha: true, id: true },
+    });
+    if (!noticia) return res.status(404).json({ error: "Noticia no encontrada" });
+
+    const [anterior, siguiente] = await Promise.all([
+      prisma.noticia.findFirst({
+        where: { fecha: { lt: noticia.fecha } },
+        orderBy: { fecha: "desc" },
+        select: { titulo: true, slug: true },
+      }),
+      prisma.noticia.findFirst({
+        where: { fecha: { gt: noticia.fecha } },
+        orderBy: { fecha: "asc" },
+        select: { titulo: true, slug: true },
+      }),
+    ]);
+
+    res.json({ anterior: anterior || null, siguiente: siguiente || null });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // POST /api/noticias
 async function crearNoticia(req, res, next) {
   try {
@@ -133,4 +161,4 @@ async function actualizarNoticia(req, res, next) {
 // DELETE /api/noticias/:id
 const eliminarNoticia = makeDeleteHandler("noticia", "Noticia");
 
-module.exports = { getNoticias, getNoticiaPorSlug, getNoticiaById, crearNoticia, actualizarNoticia, eliminarNoticia };
+module.exports = { getNoticias, getNoticiaPorSlug, getNoticiaById, getNoticiasAdyacentes, crearNoticia, actualizarNoticia, eliminarNoticia };
