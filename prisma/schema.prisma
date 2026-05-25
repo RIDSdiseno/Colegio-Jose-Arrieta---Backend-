@@ -50,6 +50,19 @@ model Album {
   @@map("albums")
 }
 
+model Video {
+  id        String   @id @default(uuid())
+  titulo    String
+  url       String
+  anio      Int
+  orden     Int      @default(0)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("videos")
+}
+
 model FotoAlbum {
   id        String   @id @default(uuid())
   url       String
