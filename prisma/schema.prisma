@@ -63,6 +63,20 @@ model Video {
   @@map("videos")
 }
 
+model Documento {
+  id         String   @id @default(uuid())
+  titulo     String
+  categoria  String   @default("Otro")
+  anio       Int
+  link       String
+  activo     Boolean  @default(true)
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("documentos")
+}
+
 model Boletin {
   id        String   @id @default(uuid())
   titulo    String
