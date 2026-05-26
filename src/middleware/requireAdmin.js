@@ -1,10 +1,14 @@
 const { createClient } = require("@supabase/supabase-js");
 
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error("SUPABASE_URL y SUPABASE_SERVICE_KEY son obligatorios. Revisar variables de entorno.");
+}
+
 // Cliente con service_role — solo vive en el servidor, nunca en el browser
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function requireAdmin(req, res, next) {
   const authHeader = req.headers["authorization"];

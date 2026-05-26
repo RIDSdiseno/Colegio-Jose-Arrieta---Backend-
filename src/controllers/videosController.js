@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const { isValidUrl } = require("../lib/validators");
 const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 // GET /api/videos — público, solo activos ordenados
@@ -45,6 +46,10 @@ async function crearVideo(req, res, next) {
       return res.status(400).json({ error: "titulo, url y anio son obligatorios" });
     }
 
+    if (!isValidUrl(url)) {
+      return res.status(400).json({ error: "url debe ser una URL válida" });
+    }
+
     const parsedAnio = parseInt(anio);
     if (isNaN(parsedAnio) || parsedAnio < 2000 || parsedAnio > 2100) {
       return res.status(400).json({ error: "anio debe ser un número entre 2000 y 2100" });
@@ -71,7 +76,12 @@ async function actualizarVideo(req, res, next) {
     const { titulo, url, anio, orden, activo } = req.body;
     const data = {};
     if (titulo !== undefined) data.titulo = titulo;
-    if (url !== undefined) data.url = url;
+    if (url !== undefined) {
+      if (!isValidUrl(url)) {
+        return res.status(400).json({ error: "url debe ser una URL válida" });
+      }
+      data.url = url;
+    }
     if (anio !== undefined) {
       const parsedAnio = parseInt(anio);
       if (isNaN(parsedAnio) || parsedAnio < 2000 || parsedAnio > 2100) {

@@ -27,4 +27,14 @@ function parseEstrellas(raw) {
   return { ok: true, value: n };
 }
 
-module.exports = { isValidHttpsUrl, HEX_COLOR, parseEstrellas };
+/** Valida que un string sea una URL válida (http o https). */
+function isValidUrl(str) {
+  try {
+    const u = new URL(str);
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+module.exports = { isValidHttpsUrl, isValidUrl, HEX_COLOR, parseEstrellas };

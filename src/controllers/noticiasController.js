@@ -2,6 +2,8 @@ const prisma = require("../lib/prisma");
 const { isValidHttpsUrl } = require("../lib/validators");
 const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
 
+const CATEGORIAS_VALIDAS = ["General", "Académico", "Deportivo", "Cultural", "Institucional", "Comunidad"];
+
 // GET /api/noticias
 async function getNoticias(req, res, next) {
   try {
@@ -100,7 +102,12 @@ async function crearNoticia(req, res, next) {
       if (!isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
       data.imagen = imagen;
     }
-    if (categoria !== undefined) data.categoria = categoria;
+    if (categoria !== undefined) {
+      if (!CATEGORIAS_VALIDAS.includes(categoria)) {
+        return res.status(400).json({ error: `categoria inválida. Opciones: ${CATEGORIAS_VALIDAS.join(", ")}` });
+      }
+      data.categoria = categoria;
+    }
     if (fecha !== undefined) {
       const parsed = new Date(fecha);
       if (isNaN(parsed.getTime())) {
@@ -126,7 +133,12 @@ async function actualizarNoticia(req, res, next) {
     if (slug !== undefined) data.slug = slug;
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
-    if (categoria !== undefined) data.categoria = categoria;
+    if (categoria !== undefined) {
+      if (!CATEGORIAS_VALIDAS.includes(categoria)) {
+        return res.status(400).json({ error: `categoria inválida. Opciones: ${CATEGORIAS_VALIDAS.join(", ")}` });
+      }
+      data.categoria = categoria;
+    }
     if (fecha !== undefined) {
       const parsed = new Date(fecha);
       if (isNaN(parsed.getTime())) {
