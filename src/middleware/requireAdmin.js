@@ -1,23 +1,23 @@
-const crypto = require("crypto");
+const { createClient } = require("@supabase/supabase-js");
 
-function requireAdmin(req, res, next) {
-  const token = req.headers["x-admin-secret"];
-  const secret = process.env.ADMIN_SECRET;
+// Cliente con service_role — solo vive en el servidor, nunca en el browser
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
-  if (!secret || !token) {
+async function requireAdmin(req, res, next) {
+  const authHeader = req.headers["authorization"];
+
+  if (!authHeader?.startsWith("Bearer ")) {
     return res.status(401).json({ error: "No autorizado" });
   }
 
-  const tokenBuf = Buffer.from(token);
-  const secretBuf = Buffer.from(secret);
+  const token = authHeader.slice(7);
 
-  let valid = false;
-  try {
-    valid = tokenBuf.byteLength === secretBuf.byteLength &&
-            crypto.timingSafeEqual(tokenBuf, secretBuf);
-  } catch (_) { /* longitudes distintas */ }
+  const { data, error } = await supabase.auth.getUser(token);
 
-  if (!valid) {
+  if (error || !data?.user) {
     return res.status(401).json({ error: "No autorizado" });
   }
 
