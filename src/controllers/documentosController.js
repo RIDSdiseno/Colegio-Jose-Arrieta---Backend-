@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const { isValidUrl } = require("../lib/validators");
 const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 const CATEGORIAS_VALIDAS = [
@@ -68,7 +69,7 @@ async function crearDocumento(req, res, next) {
     if (!titulo || !link || !anio) {
       return res.status(400).json({ error: "titulo, link y anio son obligatorios" });
     }
-    try { new URL(link); } catch {
+    if (!isValidUrl(link)) {
       return res.status(400).json({ error: "link debe ser una URL válida" });
     }
 
@@ -105,7 +106,7 @@ async function actualizarDocumento(req, res, next) {
     const data = {};
     if (titulo !== undefined) data.titulo = titulo;
     if (link !== undefined) {
-      try { new URL(link); } catch {
+      if (!isValidUrl(link)) {
         return res.status(400).json({ error: "link debe ser una URL válida" });
       }
       data.link = link;

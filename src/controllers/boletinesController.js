@@ -55,7 +55,12 @@ async function crearBoletin(req, res, next) {
     const boletin = await prisma.boletin.create({
       data: {
         titulo,
-        fecha: fecha ? new Date(fecha) : new Date(),
+        fecha: (() => {
+          if (!fecha) return new Date();
+          const parsed = new Date(fecha);
+          if (isNaN(parsed.getTime())) throw Object.assign(new Error("fecha no es una fecha válida"), { status: 400 });
+          return parsed;
+        })(),
         link,
         isPdf: isPdf !== undefined ? Boolean(isPdf) : true,
         imagen: imagen || null,
