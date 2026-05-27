@@ -32,6 +32,7 @@ function assertHasFields(data, res) {
  */
 function makeDeleteHandler(model, label, param = "id") {
   return async (req, res, next) => {
+    if (!assertValidId(req.params[param], res)) return;
     try {
       await prisma[model].delete({ where: { id: req.params[param] } });
       res.json({ message: `${label} eliminado` });

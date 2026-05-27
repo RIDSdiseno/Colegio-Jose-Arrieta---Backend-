@@ -34,6 +34,7 @@ async function getAlbumsAdmin(req, res, next) {
 
 // GET /api/albums/id/:id — admin
 async function getAlbumById(req, res, next) {
+  if (!assertValidId(req.params.id, res)) return;
   try {
     const album = await prisma.album.findUnique({
       where: { id: req.params.id },
@@ -48,6 +49,7 @@ async function getAlbumById(req, res, next) {
 
 // GET /api/albums/:id/fotos — público
 async function getFotosAlbum(req, res, next) {
+  if (!assertValidId(req.params.id, res)) return;
   try {
     const album = await prisma.album.findUnique({
       where: { id: req.params.id },

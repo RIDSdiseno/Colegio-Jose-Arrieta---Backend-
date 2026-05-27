@@ -17,6 +17,7 @@ async function getTestimonios(req, res, next) {
 
 // GET /api/testimonios/:id (admin)
 async function getTestimonioById(req, res, next) {
+  if (!assertValidId(req.params.id, res)) return;
   try {
     const testimonio = await prisma.testimonio.findUnique({
       where: { id: req.params.id },

@@ -29,6 +29,7 @@ async function getVideosAdmin(req, res, next) {
 
 // GET /api/videos/:id — admin
 async function getVideoById(req, res, next) {
+  if (!assertValidId(req.params.id, res)) return;
   try {
     const video = await prisma.video.findUnique({ where: { id: req.params.id } });
     if (!video) return res.status(404).json({ error: "Video no encontrado" });
@@ -99,7 +100,11 @@ async function actualizarVideo(req, res, next) {
       }
       data.anio = parsedAnio;
     }
-    if (orden !== undefined) data.orden = parseInt(orden);
+    if (orden !== undefined) {
+      const parsedOrden = parseInt(orden);
+      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
+      data.orden = parsedOrden;
+    }
     if (activo !== undefined) data.activo = Boolean(activo);
 
     if (!assertHasFields(data, res)) return;

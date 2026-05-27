@@ -53,6 +53,7 @@ async function getDocumentosAdmin(req, res, next) {
 
 // GET /api/documentos/id/:id — admin
 async function getDocumentoById(req, res, next) {
+  if (!assertValidId(req.params.id, res)) return;
   try {
     const doc = await prisma.documento.findUnique({ where: { id: req.params.id } });
     if (!doc) return res.status(404).json({ error: "Documento no encontrado" });
@@ -123,7 +124,11 @@ async function actualizarDocumento(req, res, next) {
       data.link = link;
     }
     if (activo !== undefined) data.activo = Boolean(activo);
-    if (orden !== undefined) data.orden = parseInt(orden);
+    if (orden !== undefined) {
+      const parsedOrden = parseInt(orden);
+      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
+      data.orden = parsedOrden;
+    }
     if (anio !== undefined) {
       const parsedAnio = parseInt(anio);
       if (isNaN(parsedAnio) || parsedAnio < 2000 || parsedAnio > 2100) {

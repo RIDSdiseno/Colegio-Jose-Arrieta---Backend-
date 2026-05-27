@@ -39,6 +39,7 @@ async function getNoticias(req, res, next) {
 
 // GET /api/noticias/id/:id (admin)
 async function getNoticiaById(req, res, next) {
+  if (!assertValidId(req.params.id, res)) return;
   try {
     const noticia = await prisma.noticia.findUnique({
       where: { id: req.params.id },
@@ -52,9 +53,11 @@ async function getNoticiaById(req, res, next) {
 
 // GET /api/noticias/:slug
 async function getNoticiaPorSlug(req, res, next) {
+  const slug = req.params.slug;
+  if (!slug || slug.length > 200) return res.status(400).json({ error: "slug inválido" });
   try {
     const noticia = await prisma.noticia.findUnique({
-      where: { slug: req.params.slug },
+      where: { slug },
     });
     if (!noticia) return res.status(404).json({ error: "Noticia no encontrada" });
     res.json(noticia);
