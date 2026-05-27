@@ -1,6 +1,6 @@
 const prisma = require("../lib/prisma");
-const { isValidHttpsUrl } = require("../lib/validators");
-const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
+const { isValidHttpsUrl, checkLength } = require("../lib/validators");
+const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 const CATEGORIAS_VALIDAS = ["General", "Académico", "Deportivo", "Cultural", "Institucional", "Comunidad"];
 
@@ -9,7 +9,12 @@ async function getNoticias(req, res, next) {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 6));
-    const search = (req.query.search || "").slice(0, 100);
+    // Normalizar búsqueda: eliminar diacríticos para que "educacion" encuentre "Educación"
+    const rawSearch = (req.query.search || "").slice(0, 100);
+    const search = rawSearch
+      .normalize("NFD")
+      .replace(/\p{Mn}/gu, "")
+      .toLowerCase();
     const skip = (page - 1) * limit;
 
     const where = search
@@ -69,13 +74,23 @@ async function getNoticiasAdyacentes(req, res, next) {
 
     const [anterior, siguiente] = await Promise.all([
       prisma.noticia.findFirst({
-        where: { fecha: { lt: noticia.fecha } },
-        orderBy: { fecha: "desc" },
+        where: {
+          OR: [
+            { fecha: { lt: noticia.fecha } },
+            { fecha: noticia.fecha, id: { lt: noticia.id } },
+          ],
+        },
+        orderBy: [{ fecha: "desc" }, { id: "desc" }],
         select: { titulo: true, slug: true },
       }),
       prisma.noticia.findFirst({
-        where: { fecha: { gt: noticia.fecha } },
-        orderBy: { fecha: "asc" },
+        where: {
+          OR: [
+            { fecha: { gt: noticia.fecha } },
+            { fecha: noticia.fecha, id: { gt: noticia.id } },
+          ],
+        },
+        orderBy: [{ fecha: "asc" }, { id: "asc" }],
         select: { titulo: true, slug: true },
       }),
     ]);
@@ -95,12 +110,24 @@ async function crearNoticia(req, res, next) {
       return res.status(400).json({ error: "titulo y slug son obligatorios" });
     }
 
+    for (const [field, value] of [["titulo", titulo], ["slug", slug], ["extracto", extracto], ["contenido", contenido]]) {
+      if (value !== undefined) {
+        const check = checkLength(field, value);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+      }
+    }
+
     const data = { titulo, slug };
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
-    if (imagen !== undefined && imagen !== null && imagen !== "") {
-      if (!isValidHttpsUrl(imagen)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
-      data.imagen = imagen;
+    if ("imagen" in req.body) {
+      const img = req.body.imagen;
+      if (img === null || img === "") {
+        data.imagen = null;
+      } else {
+        if (!isValidHttpsUrl(img)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
+        data.imagen = img;
+      }
     }
     if (categoria !== undefined) {
       if (!CATEGORIAS_VALIDAS.includes(categoria)) {
@@ -126,7 +153,15 @@ async function crearNoticia(req, res, next) {
 // PUT /api/noticias/:id
 async function actualizarNoticia(req, res, next) {
   try {
+    if (!assertValidId(req.params.id, res)) return;
     const { titulo, slug, extracto, contenido, categoria, fecha } = req.body;
+
+    for (const [field, value] of [["titulo", titulo], ["slug", slug], ["extracto", extracto], ["contenido", contenido]]) {
+      if (value !== undefined) {
+        const check = checkLength(field, value);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+      }
+    }
 
     const data = {};
     if (titulo !== undefined) data.titulo = titulo;

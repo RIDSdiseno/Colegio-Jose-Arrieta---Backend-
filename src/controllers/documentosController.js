@@ -1,6 +1,6 @@
 const prisma = require("../lib/prisma");
-const { isValidUrl } = require("../lib/validators");
-const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
+const { isValidHttpsUrl, checkLength } = require("../lib/validators");
+const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 const CATEGORIAS_VALIDAS = [
   "Información de Cursos",
@@ -69,8 +69,12 @@ async function crearDocumento(req, res, next) {
     if (!titulo || !link || !anio) {
       return res.status(400).json({ error: "titulo, link y anio son obligatorios" });
     }
-    if (!isValidUrl(link)) {
-      return res.status(400).json({ error: "link debe ser una URL válida" });
+    for (const [field, value] of [["titulo", titulo]]) {
+      const check = checkLength(field, value);
+      if (!check.ok) return res.status(400).json({ error: check.error });
+    }
+    if (!isValidHttpsUrl(link)) {
+      return res.status(400).json({ error: "link debe ser una URL https válida" });
     }
 
     const parsedAnio = parseInt(anio);
@@ -102,12 +106,19 @@ async function crearDocumento(req, res, next) {
 // PUT /api/documentos/:id — admin
 async function actualizarDocumento(req, res, next) {
   try {
+    if (!assertValidId(req.params.id, res)) return;
     const { titulo, categoria, anio, link, activo, orden } = req.body;
+    for (const [field, value] of [["titulo", titulo]]) {
+      if (value !== undefined) {
+        const check = checkLength(field, value);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+      }
+    }
     const data = {};
     if (titulo !== undefined) data.titulo = titulo;
     if (link !== undefined) {
-      if (!isValidUrl(link)) {
-        return res.status(400).json({ error: "link debe ser una URL válida" });
+      if (!isValidHttpsUrl(link)) {
+        return res.status(400).json({ error: "link debe ser una URL https válida" });
       }
       data.link = link;
     }

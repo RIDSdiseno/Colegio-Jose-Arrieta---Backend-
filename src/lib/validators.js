@@ -1,9 +1,10 @@
 /**
  * Valida que un string sea una URL https válida.
- * Permite string vacío (para limpiar campos opcionales).
+ * Rechaza strings vacíos. Para campos URL opcionales que admiten
+ * borrado, verificar `if (value && !isValidHttpsUrl(value))` en el caller.
  */
 function isValidHttpsUrl(str) {
-  if (str === "") return true;
+  if (!str) return false;
   try {
     const u = new URL(str);
     return u.protocol === "https:";
@@ -12,8 +13,8 @@ function isValidHttpsUrl(str) {
   }
 }
 
-/** Valida formato de color hex: #rgb, #rrggbb, #rrggbbaa */
-const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
+/** Valida formato de color hex CSS válido: #rgb, #rrggbb, #rrggbbaa */
+const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 /**
  * Parsea y valida el campo estrellas (1–5).
@@ -27,14 +28,35 @@ function parseEstrellas(raw) {
   return { ok: true, value: n };
 }
 
-/** Valida que un string sea una URL válida (http o https). */
-function isValidUrl(str) {
-  try {
-    const u = new URL(str);
-    return u.protocol === "https:" || u.protocol === "http:";
-  } catch {
-    return false;
+/**
+ * Límites máximos de longitud para campos de texto libre.
+ * Aplican en todos los controllers para prevenir payloads excesivos.
+ */
+const TEXT_LIMITS = {
+  titulo:      200,
+  slug:        200,
+  extracto:    500,
+  contenido:   60000,
+  texto:       5000,   // testimonios
+  nombre:      150,
+  cargo:       150,
+  descripcion: 1000,
+  caption:     300,
+  categoria:   100,
+};
+
+/**
+ * Valida que un campo de texto no supere el límite definido en TEXT_LIMITS.
+ * Retorna { ok: true } o { ok: false, error: string }.
+ * Si el campo no está en TEXT_LIMITS, pasa sin restricción.
+ */
+function checkLength(field, value) {
+  const max = TEXT_LIMITS[field];
+  if (!max || typeof value !== "string") return { ok: true };
+  if (value.length > max) {
+    return { ok: false, error: `${field} supera el máximo de ${max} caracteres` };
   }
+  return { ok: true };
 }
 
-module.exports = { isValidHttpsUrl, isValidUrl, HEX_COLOR, parseEstrellas };
+module.exports = { isValidHttpsUrl, HEX_COLOR, parseEstrellas, checkLength, TEXT_LIMITS };

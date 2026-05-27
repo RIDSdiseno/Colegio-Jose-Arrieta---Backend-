@@ -1,6 +1,6 @@
 const prisma = require("../lib/prisma");
-const { HEX_COLOR, parseEstrellas } = require("../lib/validators");
-const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
+const { HEX_COLOR, parseEstrellas, checkLength } = require("../lib/validators");
+const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 // GET /api/testimonios
 async function getTestimonios(req, res, next) {
@@ -49,6 +49,13 @@ async function crearTestimonio(req, res, next) {
       return res.status(400).json({ error: "nombre y texto son obligatorios" });
     }
 
+    for (const [field, value] of [["nombre", nombre], ["cargo", cargo], ["texto", texto]]) {
+      if (value !== undefined) {
+        const check = checkLength(field, value);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+      }
+    }
+
     const data = { nombre, texto };
     if (cargo !== undefined) data.cargo = cargo;
     if (color !== undefined) {
@@ -72,7 +79,15 @@ async function crearTestimonio(req, res, next) {
 // PUT /api/testimonios/:id
 async function actualizarTestimonio(req, res, next) {
   try {
+    if (!assertValidId(req.params.id, res)) return;
     const { nombre, cargo, texto, estrellas, color, activo } = req.body;
+
+    for (const [field, value] of [["nombre", nombre], ["cargo", cargo], ["texto", texto]]) {
+      if (value !== undefined) {
+        const check = checkLength(field, value);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+      }
+    }
 
     const data = {};
     if (nombre !== undefined) data.nombre = nombre;

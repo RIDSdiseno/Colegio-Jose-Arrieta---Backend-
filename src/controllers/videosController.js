@@ -1,6 +1,6 @@
 const prisma = require("../lib/prisma");
-const { isValidUrl } = require("../lib/validators");
-const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
+const { isValidHttpsUrl, checkLength } = require("../lib/validators");
+const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 // GET /api/videos — público, solo activos ordenados
 async function getVideos(req, res, next) {
@@ -45,9 +45,12 @@ async function crearVideo(req, res, next) {
     if (!titulo || !url || !anio) {
       return res.status(400).json({ error: "titulo, url y anio son obligatorios" });
     }
-
-    if (!isValidUrl(url)) {
-      return res.status(400).json({ error: "url debe ser una URL válida" });
+    for (const [field, value] of [["titulo", titulo]]) {
+      const check = checkLength(field, value);
+      if (!check.ok) return res.status(400).json({ error: check.error });
+    }
+    if (!isValidHttpsUrl(url)) {
+      return res.status(400).json({ error: "url debe ser una URL https válida" });
     }
 
     const parsedAnio = parseInt(anio);
@@ -73,12 +76,19 @@ async function crearVideo(req, res, next) {
 // PUT /api/videos/:id — admin
 async function actualizarVideo(req, res, next) {
   try {
+    if (!assertValidId(req.params.id, res)) return;
     const { titulo, url, anio, orden, activo } = req.body;
+    for (const [field, value] of [["titulo", titulo]]) {
+      if (value !== undefined) {
+        const check = checkLength(field, value);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+      }
+    }
     const data = {};
     if (titulo !== undefined) data.titulo = titulo;
     if (url !== undefined) {
-      if (!isValidUrl(url)) {
-        return res.status(400).json({ error: "url debe ser una URL válida" });
+      if (!isValidHttpsUrl(url)) {
+        return res.status(400).json({ error: "url debe ser una URL https válida" });
       }
       data.url = url;
     }

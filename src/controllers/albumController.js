@@ -1,6 +1,6 @@
 const prisma = require("../lib/prisma");
-const { isValidHttpsUrl } = require("../lib/validators");
-const { assertHasFields, makeDeleteHandler } = require("../lib/controllerHelpers");
+const { isValidHttpsUrl, checkLength } = require("../lib/validators");
+const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 // GET /api/albums — público, solo activos
 async function getAlbums(req, res, next) {
@@ -69,6 +69,13 @@ async function crearAlbum(req, res, next) {
     if (portada && !isValidHttpsUrl(portada))
       return res.status(400).json({ error: "portada debe ser una URL https válida" });
 
+    for (const [field, value] of [["titulo", titulo], ["descripcion", descripcion]]) {
+      if (value !== undefined) {
+        const check = checkLength(field, value);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+      }
+    }
+
     const data = { titulo };
     if (descripcion !== undefined) data.descripcion = descripcion;
     if (portada) data.portada = portada;
@@ -85,7 +92,16 @@ async function crearAlbum(req, res, next) {
 // PUT /api/albums/:id — admin
 async function actualizarAlbum(req, res, next) {
   try {
+    if (!assertValidId(req.params.id, res)) return;
     const { titulo, descripcion, portada, orden, activo } = req.body;
+
+    for (const [field, value] of [["titulo", titulo], ["descripcion", descripcion]]) {
+      if (value !== undefined) {
+        const check = checkLength(field, value);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+      }
+    }
+
     const data = {};
     if (titulo !== undefined) data.titulo = titulo;
     if (descripcion !== undefined) data.descripcion = descripcion;
@@ -115,6 +131,10 @@ async function agregarFoto(req, res, next) {
     const { url, caption, orden } = req.body;
     if (!url) return res.status(400).json({ error: "url es obligatorio" });
     if (!isValidHttpsUrl(url)) return res.status(400).json({ error: "url debe ser una URL https válida" });
+    if (caption !== undefined) {
+      const check = checkLength("caption", caption);
+      if (!check.ok) return res.status(400).json({ error: check.error });
+    }
 
     const album = await prisma.album.findUnique({ where: { id: req.params.id } });
     if (!album) return res.status(404).json({ error: "Álbum no encontrado" });

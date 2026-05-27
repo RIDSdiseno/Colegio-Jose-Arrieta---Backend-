@@ -19,7 +19,19 @@ async function requireAdmin(req, res, next) {
 
   const token = authHeader.slice(7);
 
-  const { data, error } = await supabase.auth.getUser(token);
+  let authResult;
+  try {
+    authResult = await Promise.race([
+      supabase.auth.getUser(token),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Auth timeout")), 5000)
+      ),
+    ]);
+  } catch {
+    return res.status(503).json({ error: "Servicio de autenticación no disponible" });
+  }
+
+  const { data, error } = authResult;
 
   if (error || !data?.user) {
     return res.status(401).json({ error: "No autorizado" });
