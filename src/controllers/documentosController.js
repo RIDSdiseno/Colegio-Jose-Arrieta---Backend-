@@ -14,6 +14,7 @@ const CATEGORIAS_VALIDAS = [
 async function getDocumentos(req, res, next) {
   try {
     const anio = req.query.anio ? parseInt(req.query.anio) : new Date().getFullYear();
+    if (isNaN(anio)) return res.status(400).json({ error: "anio inválido" });
     const documentos = await prisma.documento.findMany({
       where: { activo: true, anio },
       orderBy: [{ orden: "asc" }, { titulo: "asc" }],

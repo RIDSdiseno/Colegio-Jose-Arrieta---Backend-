@@ -129,6 +129,7 @@ const eliminarAlbum = makeDeleteHandler("album", "Álbum");
 
 // POST /api/albums/:id/fotos — admin
 async function agregarFoto(req, res, next) {
+  if (!assertValidId(req.params.id, res)) return;
   try {
     const { url, caption, orden } = req.body;
     if (!url) return res.status(400).json({ error: "url es obligatorio" });
