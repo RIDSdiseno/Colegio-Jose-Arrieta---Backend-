@@ -9,22 +9,33 @@ async function getNoticias(req, res, next) {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 6));
-    // Normalizar búsqueda: eliminar diacríticos para que "educacion" encuentre "Educación"
-    const rawSearch = (req.query.search || "").slice(0, 100);
-    const search = rawSearch
-      .normalize("NFD")
-      .replace(/\p{Mn}/gu, "")
-      .toLowerCase();
+    const search = (req.query.search || "").trim().slice(0, 100);
     const skip = (page - 1) * limit;
 
-    const where = search
-      ? { titulo: { contains: search, mode: "insensitive" } }
-      : {};
-
-    const [data, total] = await Promise.all([
-      prisma.noticia.findMany({ where, orderBy: { fecha: "desc" }, skip, take: limit }),
-      prisma.noticia.count({ where }),
-    ]);
+    let data, total;
+    if (search) {
+      const pattern = `%${search}%`;
+      const [rows, countRows] = await Promise.all([
+        prisma.$queryRaw`
+          SELECT * FROM noticias
+          WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern}))
+          ORDER BY fecha DESC
+          LIMIT ${limit} OFFSET ${skip}
+        `,
+        // ::int cast necesario — sin él Prisma retorna BigInt y Math.ceil falla
+        prisma.$queryRaw`
+          SELECT COUNT(*)::int AS count FROM noticias
+          WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern}))
+        `,
+      ]);
+      data = rows;
+      total = countRows[0]?.count ?? 0;
+    } else {
+      [data, total] = await Promise.all([
+        prisma.noticia.findMany({ orderBy: { fecha: "desc" }, skip, take: limit }),
+        prisma.noticia.count(),
+      ]);
+    }
 
     res.json({
       data,

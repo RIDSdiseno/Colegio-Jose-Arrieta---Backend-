@@ -54,7 +54,12 @@ process.on("SIGTERM", async () => {
 
 // Iniciar servidor solo si la BD responde
 prisma.$connect()
-  .then(() => {
+  .then(async () => {
+    try {
+      await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS unaccent;`;
+    } catch {
+      console.warn("No se pudo habilitar la extensión unaccent (se requieren permisos de superusuario). La búsqueda sin tildes no estará disponible.");
+    }
     console.log("Conectado a la base de datos");
     app.listen(PORT, () => {
       console.log(`Servidor corriendo en http://localhost:${PORT}`);
