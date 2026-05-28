@@ -37,7 +37,7 @@ async function requireAdmin(req, res, next) {
     return res.status(401).json({ error: "No autorizado" });
   }
 
-  const role = data.user.app_metadata?.role ?? data.user.user_metadata?.role;
+  const role = data.user.app_metadata?.role;
   if (role !== "admin") {
     return res.status(403).json({ error: "Acceso denegado" });
   }

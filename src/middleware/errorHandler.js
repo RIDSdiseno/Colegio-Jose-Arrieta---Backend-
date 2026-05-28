@@ -1,5 +1,10 @@
 function errorHandler(err, req, res, next) {
-  console.error(err);
+  // En producción solo loguear mensaje + stack; en desarrollo el objeto completo
+  if (process.env.NODE_ENV === "production") {
+    console.error(`[${new Date().toISOString()}] ${err.message}\n${err.stack}`);
+  } else {
+    console.error(err);
+  }
 
   // Prisma: registro no encontrado
   if (err.code === "P2025") {

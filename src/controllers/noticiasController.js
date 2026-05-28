@@ -1,3 +1,4 @@
+const { Prisma } = require("@prisma/client");
 const prisma = require("../lib/prisma");
 const { isValidHttpsUrl, checkLength } = require("../lib/validators");
 const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/controllerHelpers");
@@ -15,12 +16,28 @@ async function getNoticias(req, res, next) {
     let data, total;
     if (search) {
       const pattern = `%${search}%`;
+      const limitVal = Prisma.sql`${limit}`;
+      const skipVal = Prisma.sql`${skip}`;
       const [rows, countRows] = await Promise.all([
+        // Columnas explícitas + fechas casteadas a text para que el formato sea
+        // idéntico al que devuelve Prisma ORM (evita que el frontend reciba
+        // tipos distintos según si hay búsqueda o no)
         prisma.$queryRaw`
-          SELECT * FROM noticias
+          SELECT
+            id,
+            titulo,
+            slug,
+            extracto,
+            contenido,
+            imagen,
+            categoria,
+            fecha::text        AS fecha,
+            created_at::text   AS "createdAt",
+            updated_at::text   AS "updatedAt"
+          FROM noticias
           WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern}))
           ORDER BY fecha DESC
-          LIMIT ${limit} OFFSET ${skip}
+          LIMIT ${limitVal} OFFSET ${skipVal}
         `,
         // ::int cast necesario — sin él Prisma retorna BigInt y Math.ceil falla
         prisma.$queryRaw`
@@ -79,6 +96,8 @@ async function getNoticiaPorSlug(req, res, next) {
 
 // GET /api/noticias/:slug/adyacentes
 async function getNoticiasAdyacentes(req, res, next) {
+  const slug = req.params.slug;
+  if (!slug || slug.length > 200) return res.status(400).json({ error: "slug inválido" });
   try {
     const noticia = await prisma.noticia.findUnique({
       where: { slug: req.params.slug },
