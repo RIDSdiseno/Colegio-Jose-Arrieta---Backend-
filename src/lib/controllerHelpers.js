@@ -46,4 +46,18 @@ function makeDeleteHandler(model, label, param = "id") {
   };
 }
 
-module.exports = { assertHasFields, assertValidId, makeDeleteHandler };
+/**
+ * Parsea y valida el campo `orden` de un request.
+ * Retorna { ok: true, value } o { ok: false, error }.
+ * Si `raw` es undefined, retorna { ok: true, value: defaultValue }.
+ * @param {any} raw           — valor crudo del body/query
+ * @param {number} [defaultValue=0]
+ */
+function parseOrden(raw, defaultValue = 0) {
+  if (raw === undefined) return { ok: true, value: defaultValue };
+  const parsed = parseInt(raw);
+  if (isNaN(parsed)) return { ok: false, error: "orden debe ser un número entero" };
+  return { ok: true, value: parsed };
+}
+
+module.exports = { assertHasFields, assertValidId, makeDeleteHandler, parseOrden };

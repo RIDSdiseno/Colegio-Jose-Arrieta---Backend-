@@ -10,10 +10,6 @@ if (!supabaseUrl || !supabaseServiceKey) {
 // Cliente con service_role — solo vive en el servidor, nunca en el browser
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-if (!supabaseServiceKey.includes("service_role")) {
-  console.warn("ADVERTENCIA: SUPABASE_SERVICE_KEY no parece ser una service_role key. La autenticación admin fallará.");
-}
-
 async function requireAdmin(req, res, next) {
   const authHeader = req.headers["authorization"];
 
