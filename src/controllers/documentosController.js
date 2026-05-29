@@ -68,7 +68,7 @@ async function getDocumentoById(req, res, next) {
 async function crearDocumento(req, res, next) {
   try {
     const { titulo, categoria, anio, link, activo, orden } = req.body;
-    if (!titulo || !link || !anio) {
+    if (!titulo?.trim() || !link?.trim() || !anio) {
       return res.status(400).json({ error: "titulo, link y anio son obligatorios" });
     }
     for (const [field, value] of [["titulo", titulo]]) {
@@ -91,12 +91,12 @@ async function crearDocumento(req, res, next) {
 
     const doc = await prisma.documento.create({
       data: {
-        titulo,
+        titulo: titulo.trim(),
         categoria: cat,
         anio: parsedAnio,
-        link,
+        link: link.trim(),
         activo: activo !== undefined ? Boolean(activo) : true,
-        orden: orden !== undefined ? parseInt(orden) : 0,
+        orden: orden !== undefined ? (parseInt(orden) || 0) : 0,
       },
     });
     res.status(201).json(doc);
@@ -116,13 +116,16 @@ async function actualizarDocumento(req, res, next) {
         if (!check.ok) return res.status(400).json({ error: check.error });
       }
     }
+    if (titulo !== undefined && !titulo.trim())
+      return res.status(400).json({ error: "titulo no puede estar vacío" });
+
     const data = {};
-    if (titulo !== undefined) data.titulo = titulo;
+    if (titulo !== undefined) data.titulo = titulo.trim();
     if (link !== undefined) {
       if (!isValidHttpsUrl(link)) {
         return res.status(400).json({ error: "link debe ser una URL https válida" });
       }
-      data.link = link;
+      data.link = link.trim();
     }
     if (activo !== undefined) data.activo = Boolean(activo);
     if (orden !== undefined) {

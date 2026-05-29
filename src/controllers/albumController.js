@@ -67,7 +67,7 @@ async function getFotosAlbum(req, res, next) {
 async function crearAlbum(req, res, next) {
   try {
     const { titulo, descripcion, portada, orden, activo } = req.body;
-    if (!titulo) return res.status(400).json({ error: "titulo es obligatorio" });
+    if (!titulo?.trim()) return res.status(400).json({ error: "titulo es obligatorio" });
     if (portada && !isValidHttpsUrl(portada))
       return res.status(400).json({ error: "portada debe ser una URL https válida" });
 
@@ -78,8 +78,8 @@ async function crearAlbum(req, res, next) {
       }
     }
 
-    const data = { titulo };
-    if (descripcion !== undefined) data.descripcion = descripcion;
+    const data = { titulo: titulo.trim() };
+    if (descripcion !== undefined) data.descripcion = descripcion.trim();
     if (portada) data.portada = portada;
     if (orden !== undefined) data.orden = parseInt(orden) || 0;
     if (activo !== undefined) data.activo = Boolean(activo);
@@ -104,9 +104,12 @@ async function actualizarAlbum(req, res, next) {
       }
     }
 
+    if (titulo !== undefined && !titulo.trim())
+      return res.status(400).json({ error: "titulo no puede estar vacío" });
+
     const data = {};
-    if (titulo !== undefined) data.titulo = titulo;
-    if (descripcion !== undefined) data.descripcion = descripcion;
+    if (titulo !== undefined) data.titulo = titulo.trim();
+    if (descripcion !== undefined) data.descripcion = descripcion.trim();
     if (portada !== undefined) {
       if (portada && !isValidHttpsUrl(portada))
         return res.status(400).json({ error: "portada debe ser una URL https válida" });

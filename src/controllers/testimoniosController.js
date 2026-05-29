@@ -46,7 +46,7 @@ async function crearTestimonio(req, res, next) {
   try {
     const { nombre, cargo, texto, estrellas, color, activo } = req.body;
 
-    if (!nombre || !texto) {
+    if (!nombre?.trim() || !texto?.trim()) {
       return res.status(400).json({ error: "nombre y texto son obligatorios" });
     }
 
@@ -57,8 +57,8 @@ async function crearTestimonio(req, res, next) {
       }
     }
 
-    const data = { nombre, texto };
-    if (cargo !== undefined) data.cargo = cargo;
+    const data = { nombre: nombre.trim(), texto: texto.trim() };
+    if (cargo !== undefined) data.cargo = cargo.trim();
     if (color !== undefined) {
       if (!HEX_COLOR.test(color)) return res.status(400).json({ error: "color debe ser un valor hex válido (ej: #1e3a5f)" });
       data.color = color;
@@ -90,10 +90,15 @@ async function actualizarTestimonio(req, res, next) {
       }
     }
 
+    if (nombre !== undefined && !nombre.trim())
+      return res.status(400).json({ error: "nombre no puede estar vacío" });
+    if (texto !== undefined && !texto.trim())
+      return res.status(400).json({ error: "texto no puede estar vacío" });
+
     const data = {};
-    if (nombre !== undefined) data.nombre = nombre;
-    if (cargo !== undefined) data.cargo = cargo;
-    if (texto !== undefined) data.texto = texto;
+    if (nombre !== undefined) data.nombre = nombre.trim();
+    if (cargo !== undefined) data.cargo = cargo.trim();
+    if (texto !== undefined) data.texto = texto.trim();
     if (color !== undefined) {
       if (!HEX_COLOR.test(color)) return res.status(400).json({ error: "color debe ser un valor hex válido (ej: #1e3a5f)" });
       data.color = color;

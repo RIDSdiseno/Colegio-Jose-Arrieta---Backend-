@@ -43,7 +43,7 @@ async function getVideoById(req, res, next) {
 async function crearVideo(req, res, next) {
   try {
     const { titulo, url, anio, orden, activo } = req.body;
-    if (!titulo || !url || !anio) {
+    if (!titulo?.trim() || !url?.trim() || !anio) {
       return res.status(400).json({ error: "titulo, url y anio son obligatorios" });
     }
     for (const [field, value] of [["titulo", titulo]]) {
@@ -61,10 +61,10 @@ async function crearVideo(req, res, next) {
 
     const video = await prisma.video.create({
       data: {
-        titulo,
-        url,
+        titulo: titulo.trim(),
+        url: url.trim(),
         anio: parsedAnio,
-        orden: orden !== undefined ? parseInt(orden) : 0,
+        orden: orden !== undefined ? (parseInt(orden) || 0) : 0,
         activo: activo !== undefined ? Boolean(activo) : true,
       },
     });
@@ -85,13 +85,16 @@ async function actualizarVideo(req, res, next) {
         if (!check.ok) return res.status(400).json({ error: check.error });
       }
     }
+    if (titulo !== undefined && !titulo.trim())
+      return res.status(400).json({ error: "titulo no puede estar vacío" });
+
     const data = {};
-    if (titulo !== undefined) data.titulo = titulo;
+    if (titulo !== undefined) data.titulo = titulo.trim();
     if (url !== undefined) {
       if (!isValidHttpsUrl(url)) {
         return res.status(400).json({ error: "url debe ser una URL https válida" });
       }
-      data.url = url;
+      data.url = url.trim();
     }
     if (anio !== undefined) {
       const parsedAnio = parseInt(anio);

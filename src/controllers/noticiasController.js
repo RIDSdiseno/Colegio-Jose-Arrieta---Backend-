@@ -18,35 +18,35 @@ async function getNoticias(req, res, next) {
       const pattern = `%${search}%`;
       const limitVal = Prisma.sql`${limit}`;
       const skipVal = Prisma.sql`${skip}`;
-      const [rows, countRows] = await Promise.all([
-        // Columnas explícitas + fechas casteadas a text para que el formato sea
-        // idéntico al que devuelve Prisma ORM (evita que el frontend reciba
-        // tipos distintos según si hay búsqueda o no)
-        prisma.$queryRaw`
-          SELECT
-            id,
-            titulo,
-            slug,
-            extracto,
-            contenido,
-            imagen,
-            categoria,
-            fecha::text        AS fecha,
-            created_at::text   AS "createdAt",
-            updated_at::text   AS "updatedAt"
-          FROM noticias
-          WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern}))
-          ORDER BY fecha DESC
-          LIMIT ${limitVal} OFFSET ${skipVal}
-        `,
-        // ::int cast necesario — sin él Prisma retorna BigInt y Math.ceil falla
-        prisma.$queryRaw`
-          SELECT COUNT(*)::int AS count FROM noticias
-          WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern}))
-        `,
-      ]);
-      data = rows;
-      total = countRows[0]?.count ?? 0;
+      // Columnas explícitas + fechas casteadas a text para que el formato sea
+      // idéntico al que devuelve Prisma ORM (evita tipos distintos según haya búsqueda o no)
+      const COLS = Prisma.sql`
+        id, titulo, slug, extracto, contenido, imagen, categoria,
+        fecha::text AS fecha,
+        created_at::text AS "createdAt",
+        updated_at::text AS "updatedAt"
+      `;
+      try {
+        const [rows, countRows] = await Promise.all([
+          prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
+          // ::int cast necesario — sin él Prisma retorna BigInt y Math.ceil falla
+          prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern}))`,
+        ]);
+        data = rows;
+        total = countRows[0]?.count ?? 0;
+      } catch (unaccentErr) {
+        // Fallback si la extensión unaccent no está disponible: ILIKE simple
+        if (unaccentErr.message?.includes("unaccent") || unaccentErr.code === "42883") {
+          const [rows, countRows] = await Promise.all([
+            prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE lower(titulo) LIKE lower(${pattern}) ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
+            prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE lower(titulo) LIKE lower(${pattern})`,
+          ]);
+          data = rows;
+          total = countRows[0]?.count ?? 0;
+        } else {
+          throw unaccentErr;
+        }
+      }
     } else {
       [data, total] = await Promise.all([
         prisma.noticia.findMany({ orderBy: { fecha: "desc" }, skip, take: limit }),
@@ -139,7 +139,7 @@ async function crearNoticia(req, res, next) {
   try {
     const { titulo, slug, extracto, contenido, imagen, categoria, fecha } = req.body;
 
-    if (!titulo || !slug) {
+    if (!titulo?.trim() || !slug?.trim()) {
       return res.status(400).json({ error: "titulo y slug son obligatorios" });
     }
 
@@ -150,7 +150,7 @@ async function crearNoticia(req, res, next) {
       }
     }
 
-    const data = { titulo, slug };
+    const data = { titulo: titulo.trim(), slug: slug.trim() };
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
     if ("imagen" in req.body) {
@@ -189,6 +189,11 @@ async function actualizarNoticia(req, res, next) {
     if (!assertValidId(req.params.id, res)) return;
     const { titulo, slug, extracto, contenido, categoria, fecha } = req.body;
 
+    if (titulo !== undefined && !titulo.trim())
+      return res.status(400).json({ error: "titulo no puede estar vacío" });
+    if (slug !== undefined && !slug.trim())
+      return res.status(400).json({ error: "slug no puede estar vacío" });
+
     for (const [field, value] of [["titulo", titulo], ["slug", slug], ["extracto", extracto], ["contenido", contenido]]) {
       if (value !== undefined) {
         const check = checkLength(field, value);
@@ -197,8 +202,8 @@ async function actualizarNoticia(req, res, next) {
     }
 
     const data = {};
-    if (titulo !== undefined) data.titulo = titulo;
-    if (slug !== undefined) data.slug = slug;
+    if (titulo !== undefined) data.titulo = titulo.trim();
+    if (slug !== undefined) data.slug = slug.trim();
     if (extracto !== undefined) data.extracto = extracto;
     if (contenido !== undefined) data.contenido = contenido;
     if (categoria !== undefined) {
