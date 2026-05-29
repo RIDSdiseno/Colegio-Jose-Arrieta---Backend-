@@ -50,7 +50,7 @@ async function crearVideo(req, res, next) {
       const check = checkLength(field, value);
       if (!check.ok) return res.status(400).json({ error: check.error });
     }
-    if (!isValidHttpsUrl(url)) {
+    if (!isValidHttpsUrl(url.trim())) {
       return res.status(400).json({ error: "url debe ser una URL https válida" });
     }
 
@@ -59,12 +59,18 @@ async function crearVideo(req, res, next) {
       return res.status(400).json({ error: "anio debe ser un número entre 2000 y 2100" });
     }
 
+    let parsedOrden = 0;
+    if (orden !== undefined) {
+      parsedOrden = parseInt(orden);
+      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
+    }
+
     const video = await prisma.video.create({
       data: {
         titulo: titulo.trim(),
         url: url.trim(),
         anio: parsedAnio,
-        orden: orden !== undefined ? (parseInt(orden) || 0) : 0,
+        orden: parsedOrden,
         activo: activo !== undefined ? Boolean(activo) : true,
       },
     });

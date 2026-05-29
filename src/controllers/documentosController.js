@@ -14,7 +14,7 @@ const CATEGORIAS_VALIDAS = [
 async function getDocumentos(req, res, next) {
   try {
     const anio = req.query.anio ? parseInt(req.query.anio) : new Date().getFullYear();
-    if (isNaN(anio)) return res.status(400).json({ error: "anio inválido" });
+    if (isNaN(anio) || anio < 2000 || anio > 2100) return res.status(400).json({ error: "anio inválido" });
     const documentos = await prisma.documento.findMany({
       where: { activo: true, anio },
       orderBy: [{ orden: "asc" }, { titulo: "asc" }],
@@ -89,6 +89,12 @@ async function crearDocumento(req, res, next) {
       return res.status(400).json({ error: `categoria inválida. Opciones: ${CATEGORIAS_VALIDAS.join(", ")}` });
     }
 
+    let parsedOrden = 0;
+    if (orden !== undefined) {
+      parsedOrden = parseInt(orden);
+      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
+    }
+
     const doc = await prisma.documento.create({
       data: {
         titulo: titulo.trim(),
@@ -96,7 +102,7 @@ async function crearDocumento(req, res, next) {
         anio: parsedAnio,
         link: link.trim(),
         activo: activo !== undefined ? Boolean(activo) : true,
-        orden: orden !== undefined ? (parseInt(orden) || 0) : 0,
+        orden: parsedOrden,
       },
     });
     res.status(201).json(doc);

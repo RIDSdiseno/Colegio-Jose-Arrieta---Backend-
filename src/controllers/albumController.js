@@ -53,7 +53,7 @@ async function getFotosAlbum(req, res, next) {
   try {
     const album = await prisma.album.findUnique({
       where: { id: req.params.id },
-      include: { fotos: { orderBy: { orden: "asc" } } },
+      include: { fotos: { orderBy: { orden: "asc" }, take: 500 } },
     });
     if (!album) return res.status(404).json({ error: "Álbum no encontrado" });
     if (!album.activo) return res.status(404).json({ error: "Álbum no encontrado" });
@@ -81,7 +81,11 @@ async function crearAlbum(req, res, next) {
     const data = { titulo: titulo.trim() };
     if (descripcion !== undefined) data.descripcion = descripcion.trim();
     if (portada) data.portada = portada;
-    if (orden !== undefined) data.orden = parseInt(orden) || 0;
+    if (orden !== undefined) {
+      const parsedOrden = parseInt(orden);
+      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
+      data.orden = parsedOrden;
+    }
     if (activo !== undefined) data.activo = Boolean(activo);
 
     const album = await prisma.album.create({ data });
@@ -115,7 +119,11 @@ async function actualizarAlbum(req, res, next) {
         return res.status(400).json({ error: "portada debe ser una URL https válida" });
       data.portada = portada || null;
     }
-    if (orden !== undefined) data.orden = parseInt(orden) || 0;
+    if (orden !== undefined) {
+      const parsedOrden = parseInt(orden);
+      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
+      data.orden = parsedOrden;
+    }
     if (activo !== undefined) data.activo = Boolean(activo);
 
     if (!assertHasFields(data, res)) return;
@@ -142,16 +150,19 @@ async function agregarFoto(req, res, next) {
       if (!check.ok) return res.status(400).json({ error: check.error });
     }
 
-    const album = await prisma.album.findUnique({ where: { id: req.params.id } });
-    if (!album) return res.status(404).json({ error: "Álbum no encontrado" });
-
     const data = { url, albumId: req.params.id };
     if (caption !== undefined) data.caption = caption;
-    if (orden !== undefined) data.orden = parseInt(orden) || 0;
+    if (orden !== undefined) {
+      const parsedOrden = parseInt(orden);
+      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
+      data.orden = parsedOrden;
+    }
 
     const foto = await prisma.fotoAlbum.create({ data });
     res.status(201).json(foto);
   } catch (err) {
+    // P2003 = FK violation: el álbum fue eliminado entre la validación y el insert
+    if (err.code === "P2003") return res.status(404).json({ error: "Álbum no encontrado" });
     next(err);
   }
 }

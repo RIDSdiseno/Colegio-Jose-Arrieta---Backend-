@@ -46,11 +46,13 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // Graceful shutdown
-process.on("SIGTERM", async () => {
-  console.log("SIGTERM recibido, cerrando servidor...");
+async function shutdown(signal) {
+  console.log(`${signal} recibido, cerrando servidor...`);
   await prisma.$disconnect();
   process.exit(0);
-});
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 // Iniciar servidor solo si la BD responde
 prisma.$connect()
