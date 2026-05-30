@@ -83,17 +83,17 @@ async function actualizarTestimonio(req, res, next) {
     if (!assertValidId(req.params.id, res)) return;
     const { nombre, cargo, texto, estrellas, color, activo } = req.body;
 
+    if (nombre !== undefined && !nombre.trim())
+      return res.status(400).json({ error: "nombre no puede estar vacío" });
+    if (texto !== undefined && !texto.trim())
+      return res.status(400).json({ error: "texto no puede estar vacío" });
+
     for (const [field, value] of [["nombre", nombre], ["cargo", cargo], ["texto", texto]]) {
       if (value !== undefined) {
         const check = checkLength(field, value);
         if (!check.ok) return res.status(400).json({ error: check.error });
       }
     }
-
-    if (nombre !== undefined && !nombre.trim())
-      return res.status(400).json({ error: "nombre no puede estar vacío" });
-    if (texto !== undefined && !texto.trim())
-      return res.status(400).json({ error: "texto no puede estar vacío" });
 
     const data = {};
     if (nombre !== undefined) data.nombre = nombre.trim();
