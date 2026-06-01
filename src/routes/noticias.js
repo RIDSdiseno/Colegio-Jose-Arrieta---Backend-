@@ -1,9 +1,10 @@
 const router = require("express").Router();
 const requireAdmin = require("../middleware/requireAdmin");
-const { getNoticias, getNoticiaPorSlug, getNoticiaById, getNoticiasAdyacentes, crearNoticia, actualizarNoticia, eliminarNoticia } = require("../controllers/noticiasController");
+const { getNoticias, getAnosNoticias, getNoticiaPorSlug, getNoticiaById, getNoticiasAdyacentes, crearNoticia, actualizarNoticia, eliminarNoticia } = require("../controllers/noticiasController");
 
 router.get("/", getNoticias);
 router.get("/admin", requireAdmin, getNoticias);
+router.get("/anos", getAnosNoticias);
 router.get("/id/:id", requireAdmin, getNoticiaById);
 router.get("/:slug/adyacentes", getNoticiasAdyacentes);
 router.get("/:slug", getNoticiaPorSlug);

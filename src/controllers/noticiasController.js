@@ -11,6 +11,10 @@ async function getNoticias(req, res, next) {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 6));
     const search = (req.query.search || "").trim().slice(0, 100);
+    const rawCategoria = (req.query.categoria || "").trim();
+    const categoria = CATEGORIAS_VALIDAS.includes(rawCategoria) ? rawCategoria : "";
+    const rawAnio = parseInt(req.query.anio);
+    const anio = !isNaN(rawAnio) && rawAnio >= 2000 && rawAnio <= 2100 ? rawAnio : 0;
     const skip = (page - 1) * limit;
 
     let data, total;
@@ -26,11 +30,13 @@ async function getNoticias(req, res, next) {
         created_at::text AS "createdAt",
         updated_at::text AS "updatedAt"
       `;
+      // Condiciones extra de categoría y año para el path de raw SQL
+      const catFilter = categoria ? Prisma.sql`AND categoria = ${categoria}` : Prisma.sql``;
+      const anioFilter = anio ? Prisma.sql`AND EXTRACT(YEAR FROM fecha) = ${anio}` : Prisma.sql``;
       try {
         const [rows, countRows] = await Promise.all([
-          prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
-          // ::int cast necesario — sin él Prisma retorna BigInt y Math.ceil falla
-          prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern}))`,
+          prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) ${catFilter} ${anioFilter} ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
+          prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) ${catFilter} ${anioFilter}`,
         ]);
         data = rows;
         total = countRows[0]?.count ?? 0;
@@ -38,8 +44,8 @@ async function getNoticias(req, res, next) {
         // Fallback si la extensión unaccent no está disponible: ILIKE simple
         if (unaccentErr.message?.includes("unaccent") || unaccentErr.code === "42883") {
           const [rows, countRows] = await Promise.all([
-            prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE lower(titulo) LIKE lower(${pattern}) ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
-            prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE lower(titulo) LIKE lower(${pattern})`,
+            prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE lower(titulo) LIKE lower(${pattern}) ${catFilter} ${anioFilter} ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
+            prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE lower(titulo) LIKE lower(${pattern}) ${catFilter} ${anioFilter}`,
           ]);
           data = rows;
           total = countRows[0]?.count ?? 0;
@@ -48,9 +54,17 @@ async function getNoticias(req, res, next) {
         }
       }
     } else {
+      const where = {};
+      if (categoria) where.categoria = categoria;
+      if (anio) {
+        where.fecha = {
+          gte: new Date(`${anio}-01-01`),
+          lt: new Date(`${anio + 1}-01-01`),
+        };
+      }
       [data, total] = await Promise.all([
-        prisma.noticia.findMany({ orderBy: { fecha: "desc" }, skip, take: limit }),
-        prisma.noticia.count(),
+        prisma.noticia.findMany({ where, orderBy: { fecha: "desc" }, skip, take: limit }),
+        prisma.noticia.count({ where }),
       ]);
     }
 
@@ -60,6 +74,20 @@ async function getNoticias(req, res, next) {
       totalPages: Math.max(1, Math.ceil(total / limit)),
       total,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/noticias/anos — público, años con noticias
+async function getAnosNoticias(req, res, next) {
+  try {
+    const rows = await prisma.$queryRaw`
+      SELECT DISTINCT EXTRACT(YEAR FROM fecha)::int AS anio
+      FROM noticias
+      ORDER BY anio DESC
+    `;
+    res.json(rows.map((r) => r.anio));
   } catch (err) {
     next(err);
   }
@@ -246,4 +274,4 @@ async function actualizarNoticia(req, res, next) {
 // DELETE /api/noticias/:id
 const eliminarNoticia = makeDeleteHandler("noticia", "Noticia");
 
-module.exports = { getNoticias, getNoticiaPorSlug, getNoticiaById, getNoticiasAdyacentes, crearNoticia, actualizarNoticia, eliminarNoticia };
+module.exports = { getNoticias, getAnosNoticias, getNoticiaPorSlug, getNoticiaById, getNoticiasAdyacentes, crearNoticia, actualizarNoticia, eliminarNoticia };
