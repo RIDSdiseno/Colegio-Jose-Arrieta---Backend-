@@ -35,8 +35,8 @@ async function getNoticias(req, res, next) {
       const anioFilter = anio ? Prisma.sql`AND EXTRACT(YEAR FROM fecha) = ${anio}` : Prisma.sql``;
       try {
         const [rows, countRows] = await Promise.all([
-          prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) ${catFilter} ${anioFilter} ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
-          prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) ${catFilter} ${anioFilter}`,
+          prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE (unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) OR unaccent(lower(coalesce(extracto,''))) LIKE unaccent(lower(${pattern}))) ${catFilter} ${anioFilter} ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
+          prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE (unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) OR unaccent(lower(coalesce(extracto,''))) LIKE unaccent(lower(${pattern}))) ${catFilter} ${anioFilter}`,
         ]);
         data = rows;
         total = countRows[0]?.count ?? 0;
@@ -44,8 +44,8 @@ async function getNoticias(req, res, next) {
         // Fallback si la extensión unaccent no está disponible: ILIKE simple
         if (unaccentErr.message?.includes("unaccent") || unaccentErr.code === "42883") {
           const [rows, countRows] = await Promise.all([
-            prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE lower(titulo) LIKE lower(${pattern}) ${catFilter} ${anioFilter} ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
-            prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE lower(titulo) LIKE lower(${pattern}) ${catFilter} ${anioFilter}`,
+            prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE (lower(titulo) LIKE lower(${pattern}) OR lower(coalesce(extracto,'')) LIKE lower(${pattern})) ${catFilter} ${anioFilter} ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
+            prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE (lower(titulo) LIKE lower(${pattern}) OR lower(coalesce(extracto,'')) LIKE lower(${pattern})) ${catFilter} ${anioFilter}`,
           ]);
           data = rows;
           total = countRows[0]?.count ?? 0;
@@ -129,7 +129,7 @@ async function getNoticiasAdyacentes(req, res, next) {
   try {
     const noticia = await prisma.noticia.findUnique({
       where: { slug: req.params.slug },
-      select: { fecha: true, id: true },
+      select: { fecha: true, id: true, createdAt: true },
     });
     if (!noticia) return res.status(404).json({ error: "Noticia no encontrada" });
 
@@ -138,20 +138,20 @@ async function getNoticiasAdyacentes(req, res, next) {
         where: {
           OR: [
             { fecha: { lt: noticia.fecha } },
-            { fecha: noticia.fecha, id: { lt: noticia.id } },
+            { fecha: noticia.fecha, createdAt: { lt: noticia.createdAt } },
           ],
         },
-        orderBy: [{ fecha: "desc" }, { id: "desc" }],
+        orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
         select: { titulo: true, slug: true },
       }),
       prisma.noticia.findFirst({
         where: {
           OR: [
             { fecha: { gt: noticia.fecha } },
-            { fecha: noticia.fecha, id: { gt: noticia.id } },
+            { fecha: noticia.fecha, createdAt: { gt: noticia.createdAt } },
           ],
         },
-        orderBy: [{ fecha: "asc" }, { id: "asc" }],
+        orderBy: [{ fecha: "asc" }, { createdAt: "asc" }],
         select: { titulo: true, slug: true },
       }),
     ]);

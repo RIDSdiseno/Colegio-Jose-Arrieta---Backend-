@@ -52,11 +52,10 @@ async function getFotosAlbum(req, res, next) {
   if (!assertValidId(req.params.id, res)) return;
   try {
     const album = await prisma.album.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id, activo: true },
       include: { fotos: { orderBy: { orden: "asc" }, take: 500 } },
     });
     if (!album) return res.status(404).json({ error: "Álbum no encontrado" });
-    if (!album.activo) return res.status(404).json({ error: "Álbum no encontrado" });
     res.json(album);
   } catch (err) {
     next(err);
