@@ -79,6 +79,22 @@ async function getNoticias(req, res, next) {
   }
 }
 
+// GET /api/noticias/admin — admin, todas las noticias sin filtros de estado
+async function getNoticiasAdmin(req, res, next) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      prisma.noticia.findMany({ orderBy: { fecha: "desc" }, skip, take: limit }),
+      prisma.noticia.count(),
+    ]);
+    res.json({ data, page, totalPages: Math.max(1, Math.ceil(total / limit)), total });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // GET /api/noticias/anos — público, años con noticias
 async function getAnosNoticias(req, res, next) {
   try {
@@ -274,4 +290,4 @@ async function actualizarNoticia(req, res, next) {
 // DELETE /api/noticias/:id
 const eliminarNoticia = makeDeleteHandler("noticia", "Noticia");
 
-module.exports = { getNoticias, getAnosNoticias, getNoticiaPorSlug, getNoticiaById, getNoticiasAdyacentes, crearNoticia, actualizarNoticia, eliminarNoticia };
+module.exports = { getNoticias, getNoticiasAdmin, getAnosNoticias, getNoticiaPorSlug, getNoticiaById, getNoticiasAdyacentes, crearNoticia, actualizarNoticia, eliminarNoticia };
