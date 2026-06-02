@@ -5,9 +5,11 @@ const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/co
 // GET /api/videos — público, solo activos ordenados
 async function getVideos(req, res, next) {
   try {
+    const limit = req.query.limit ? Math.min(50, Math.max(1, parseInt(req.query.limit) || 50)) : undefined;
     const videos = await prisma.video.findMany({
       where: { activo: true },
       orderBy: [{ orden: "asc" }, { anio: "desc" }],
+      ...(limit ? { take: limit } : {}),
     });
     res.json(videos);
   } catch (err) {

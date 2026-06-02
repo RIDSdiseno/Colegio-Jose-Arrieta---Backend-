@@ -13,6 +13,7 @@ async function getNoticias(req, res, next) {
     const search = (req.query.search || "").trim().slice(0, 100);
     const rawCategoria = (req.query.categoria || "").trim();
     const categoria = CATEGORIAS_VALIDAS.includes(rawCategoria) ? rawCategoria : "";
+    const rawOrden = req.query.orden === "asc" ? "asc" : "desc";
     const rawAnio = parseInt(req.query.anio);
     const anio = !isNaN(rawAnio) && rawAnio >= 2000 && rawAnio <= 2100 ? rawAnio : 0;
     const skip = (page - 1) * limit;
@@ -33,9 +34,10 @@ async function getNoticias(req, res, next) {
       // Condiciones extra de categoría y año para el path de raw SQL
       const catFilter = categoria ? Prisma.sql`AND categoria = ${categoria}` : Prisma.sql``;
       const anioFilter = anio ? Prisma.sql`AND EXTRACT(YEAR FROM fecha) = ${anio}` : Prisma.sql``;
+      const orderSQL = rawOrden === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
       try {
         const [rows, countRows] = await Promise.all([
-          prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE (unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) OR unaccent(lower(coalesce(extracto,''))) LIKE unaccent(lower(${pattern}))) ${catFilter} ${anioFilter} ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
+          prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE (unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) OR unaccent(lower(coalesce(extracto,''))) LIKE unaccent(lower(${pattern}))) ${catFilter} ${anioFilter} ORDER BY fecha ${orderSQL} LIMIT ${limitVal} OFFSET ${skipVal}`,
           prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE (unaccent(lower(titulo)) LIKE unaccent(lower(${pattern})) OR unaccent(lower(coalesce(extracto,''))) LIKE unaccent(lower(${pattern}))) ${catFilter} ${anioFilter}`,
         ]);
         data = rows;
@@ -44,7 +46,7 @@ async function getNoticias(req, res, next) {
         // Fallback si la extensión unaccent no está disponible: ILIKE simple
         if (unaccentErr.message?.includes("unaccent") || unaccentErr.code === "42883") {
           const [rows, countRows] = await Promise.all([
-            prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE (lower(titulo) LIKE lower(${pattern}) OR lower(coalesce(extracto,'')) LIKE lower(${pattern})) ${catFilter} ${anioFilter} ORDER BY fecha DESC LIMIT ${limitVal} OFFSET ${skipVal}`,
+            prisma.$queryRaw`SELECT ${COLS} FROM noticias WHERE (lower(titulo) LIKE lower(${pattern}) OR lower(coalesce(extracto,'')) LIKE lower(${pattern})) ${catFilter} ${anioFilter} ORDER BY fecha ${orderSQL} LIMIT ${limitVal} OFFSET ${skipVal}`,
             prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM noticias WHERE (lower(titulo) LIKE lower(${pattern}) OR lower(coalesce(extracto,'')) LIKE lower(${pattern})) ${catFilter} ${anioFilter}`,
           ]);
           data = rows;
@@ -63,7 +65,7 @@ async function getNoticias(req, res, next) {
         };
       }
       [data, total] = await Promise.all([
-        prisma.noticia.findMany({ where, orderBy: { fecha: "desc" }, skip, take: limit }),
+        prisma.noticia.findMany({ where, orderBy: { fecha: rawOrden }, skip, take: limit }),
         prisma.noticia.count({ where }),
       ]);
     }
@@ -79,15 +81,24 @@ async function getNoticias(req, res, next) {
   }
 }
 
-// GET /api/noticias/admin — admin, todas las noticias sin filtros de estado
+// GET /api/noticias/admin — admin, todas las noticias con búsqueda, categoría y año opcionales
 async function getNoticiasAdmin(req, res, next) {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const search = (req.query.search || "").trim().slice(0, 100);
+    const rawCategoria = (req.query.categoria || "").trim();
+    const categoria = CATEGORIAS_VALIDAS.includes(rawCategoria) ? rawCategoria : "";
+    const rawAnio = parseInt(req.query.anio);
+    const anio = !isNaN(rawAnio) && rawAnio >= 2000 && rawAnio <= 2100 ? rawAnio : 0;
     const skip = (page - 1) * limit;
+    const where = {};
+    if (search) where.titulo = { contains: search, mode: "insensitive" };
+    if (categoria) where.categoria = categoria;
+    if (anio) where.fecha = { gte: new Date(`${anio}-01-01`), lt: new Date(`${anio + 1}-01-01`) };
     const [data, total] = await Promise.all([
-      prisma.noticia.findMany({ orderBy: { fecha: "desc" }, skip, take: limit }),
-      prisma.noticia.count(),
+      prisma.noticia.findMany({ where, orderBy: { fecha: "desc" }, skip, take: limit }),
+      prisma.noticia.count({ where }),
     ]);
     res.json({ data, page, totalPages: Math.max(1, Math.ceil(total / limit)), total });
   } catch (err) {
