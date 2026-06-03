@@ -93,7 +93,10 @@ async function getNoticiasAdmin(req, res, next) {
     const anio = !isNaN(rawAnio) && rawAnio >= 2000 && rawAnio <= 2100 ? rawAnio : 0;
     const skip = (page - 1) * limit;
     const where = {};
-    if (search) where.titulo = { contains: search, mode: "insensitive" };
+    if (search) where.OR = [
+      { titulo:   { contains: search, mode: "insensitive" } },
+      { extracto: { contains: search, mode: "insensitive" } },
+    ];
     if (categoria) where.categoria = categoria;
     if (anio) where.fecha = { gte: new Date(`${anio}-01-01`), lt: new Date(`${anio + 1}-01-01`) };
     const [data, total] = await Promise.all([

@@ -69,6 +69,7 @@ async function crearAlbum(req, res, next) {
     if (!titulo?.trim()) return res.status(400).json({ error: "titulo es obligatorio" });
     if (portada && !isValidHttpsUrl(portada))
       return res.status(400).json({ error: "portada debe ser una URL https válida" });
+    // Consistente con actualizarAlbum: portada vacía → null explícito
 
     for (const [field, value] of [["titulo", titulo], ["descripcion", descripcion]]) {
       if (value !== undefined) {
@@ -79,7 +80,7 @@ async function crearAlbum(req, res, next) {
 
     const data = { titulo: titulo.trim() };
     if (descripcion !== undefined) data.descripcion = descripcion.trim();
-    if (portada) data.portada = portada;
+    if ("portada" in req.body) data.portada = portada || null;
     if (orden !== undefined) {
       const parsedOrden = parseInt(orden);
       if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
