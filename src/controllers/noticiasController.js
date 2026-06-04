@@ -166,6 +166,7 @@ async function getNoticiasAdyacentes(req, res, next) {
     const [anterior, siguiente] = await Promise.all([
       prisma.noticia.findFirst({
         where: {
+          id: { not: noticia.id }, // excluir la noticia actual para evitar auto-referencia
           OR: [
             { fecha: { lt: noticia.fecha } },
             { fecha: noticia.fecha, createdAt: { lt: noticia.createdAt } },
@@ -176,6 +177,7 @@ async function getNoticiasAdyacentes(req, res, next) {
       }),
       prisma.noticia.findFirst({
         where: {
+          id: { not: noticia.id },
           OR: [
             { fecha: { gt: noticia.fecha } },
             { fecha: noticia.fecha, createdAt: { gt: noticia.createdAt } },
