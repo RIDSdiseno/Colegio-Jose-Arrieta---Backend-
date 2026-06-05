@@ -10,9 +10,22 @@ const CATEGORIAS_VALIDAS = [
   "Otro",
 ];
 
-// GET /api/documentos?anio=2026 — público, solo activos
+// GET /api/documentos?anio=2026&search=termino — público, solo activos
 async function getDocumentos(req, res, next) {
   try {
+    const search = (req.query.search || "").trim().slice(0, 100);
+    // Si hay búsqueda, ignorar el filtro de año y buscar en todos
+    if (search) {
+      const documentos = await prisma.documento.findMany({
+        where: {
+          activo: true,
+          titulo: { contains: search, mode: "insensitive" },
+        },
+        orderBy: [{ anio: "desc" }, { orden: "asc" }, { titulo: "asc" }],
+        take: 10,
+      });
+      return res.json(documentos);
+    }
     const anio = req.query.anio ? parseInt(req.query.anio) : new Date().getFullYear();
     if (isNaN(anio) || anio < 2000 || anio > 2100) return res.status(400).json({ error: "anio inválido" });
     const documentos = await prisma.documento.findMany({

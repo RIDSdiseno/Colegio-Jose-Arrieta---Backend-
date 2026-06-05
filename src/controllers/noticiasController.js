@@ -93,10 +93,25 @@ async function getNoticiasAdmin(req, res, next) {
     const anio = !isNaN(rawAnio) && rawAnio >= 2000 && rawAnio <= 2100 ? rawAnio : 0;
     const skip = (page - 1) * limit;
     const where = {};
-    if (search) where.OR = [
-      { titulo:   { contains: search, mode: "insensitive" } },
-      { extracto: { contains: search, mode: "insensitive" } },
-    ];
+    if (search) {
+      // Usa unaccent vía raw SQL para ser consistente con el endpoint público
+      // Si unaccent no está disponible, Prisma cae al contains normal
+      try {
+        const pattern = `%${search}%`;
+        const ids = await prisma.$queryRaw`
+          SELECT id FROM noticias
+          WHERE (unaccent(lower(titulo)) LIKE unaccent(lower(${pattern}))
+              OR unaccent(lower(coalesce(extracto,''))) LIKE unaccent(lower(${pattern})))
+        `;
+        where.id = { in: ids.map((r) => r.id) };
+      } catch {
+        // fallback a contains si unaccent no está disponible
+        where.OR = [
+          { titulo:   { contains: search, mode: "insensitive" } },
+          { extracto: { contains: search, mode: "insensitive" } },
+        ];
+      }
+    }
     if (categoria) where.categoria = categoria;
     if (anio) where.fecha = { gte: new Date(`${anio}-01-01`), lt: new Date(`${anio + 1}-01-01`) };
     const [data, total] = await Promise.all([
