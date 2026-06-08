@@ -47,16 +47,24 @@ async function getAlbumById(req, res, next) {
   }
 }
 
-// GET /api/albums/:id/fotos — público
+// GET /api/albums/:id/fotos?page=1&limit=50 — público, paginado
 async function getFotosAlbum(req, res, next) {
   if (!assertValidId(req.params.id, res)) return;
   try {
-    const album = await prisma.album.findUnique({
-      where: { id: req.params.id, activo: true },
-      include: { fotos: { orderBy: { orden: "asc" }, take: 500 } },
-    });
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const page  = Math.max(parseInt(req.query.page)  || 1, 1);
+    const skip  = (page - 1) * limit;
+
+    const [album, total] = await Promise.all([
+      prisma.album.findUnique({
+        where: { id: req.params.id, activo: true },
+        include: { fotos: { orderBy: { orden: "asc" }, skip, take: limit } },
+      }),
+      prisma.fotoAlbum.count({ where: { albumId: req.params.id } }),
+    ]);
+
     if (!album) return res.status(404).json({ error: "Álbum no encontrado" });
-    res.json(album);
+    res.json({ ...album, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
   } catch (err) {
     next(err);
   }
