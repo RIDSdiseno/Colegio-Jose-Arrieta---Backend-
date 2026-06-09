@@ -75,7 +75,7 @@ async function crearAlbum(req, res, next) {
   try {
     const { titulo, descripcion, portada, orden, activo } = req.body;
     if (!titulo?.trim()) return res.status(400).json({ error: "titulo es obligatorio" });
-    if (portada && !isValidHttpsUrl(portada))
+    if (portada && !isValidHttpsUrl(portada.trim()))
       return res.status(400).json({ error: "portada debe ser una URL https válida" });
     // Consistente con actualizarAlbum: portada vacía → null explícito
 
@@ -88,7 +88,7 @@ async function crearAlbum(req, res, next) {
 
     const data = { titulo: titulo.trim() };
     if (descripcion !== undefined) data.descripcion = descripcion.trim();
-    if ("portada" in req.body) data.portada = portada || null;
+    if ("portada" in req.body) data.portada = portada?.trim() || null;
     if (orden !== undefined) {
       const parsedOrden = parseInt(orden);
       if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
@@ -123,9 +123,9 @@ async function actualizarAlbum(req, res, next) {
     if (titulo !== undefined) data.titulo = titulo.trim();
     if (descripcion !== undefined) data.descripcion = descripcion.trim();
     if (portada !== undefined) {
-      if (portada && !isValidHttpsUrl(portada))
+      if (portada && !isValidHttpsUrl(portada.trim()))
         return res.status(400).json({ error: "portada debe ser una URL https válida" });
-      data.portada = portada || null;
+      data.portada = portada?.trim() || null;
     }
     if (orden !== undefined) {
       const parsedOrden = parseInt(orden);
@@ -152,13 +152,13 @@ async function agregarFoto(req, res, next) {
   try {
     const { url, caption, orden } = req.body;
     if (!url) return res.status(400).json({ error: "url es obligatorio" });
-    if (!isValidHttpsUrl(url)) return res.status(400).json({ error: "url debe ser una URL https válida" });
+    if (!isValidHttpsUrl(url.trim())) return res.status(400).json({ error: "url debe ser una URL https válida" });
     if (caption !== undefined) {
       const check = checkLength("caption", caption);
       if (!check.ok) return res.status(400).json({ error: check.error });
     }
 
-    const data = { url, albumId: req.params.id };
+    const data = { url: url.trim(), albumId: req.params.id };
     if (caption !== undefined) data.caption = caption;
     if (orden !== undefined) {
       const parsedOrden = parseInt(orden);

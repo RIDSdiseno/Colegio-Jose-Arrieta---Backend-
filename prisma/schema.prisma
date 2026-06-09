@@ -19,6 +19,8 @@ model Noticia {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
+  @@index([fecha(sort: Desc)])
+  @@index([categoria])
   @@map("noticias")
 }
 
@@ -47,6 +49,7 @@ model Album {
   updatedAt   DateTime    @updatedAt @map("updated_at")
   fotos       FotoAlbum[]
 
+  @@index([activo, orden])
   @@map("albums")
 }
 
@@ -74,6 +77,7 @@ model Documento {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
+  @@index([anio])
   @@map("documentos")
 }
 

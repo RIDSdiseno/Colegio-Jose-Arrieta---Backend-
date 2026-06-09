@@ -40,6 +40,17 @@ const withWriteLimit = (router) => [
 
 app.use(globalLimiter);
 
+// Logger de requests — método, ruta, status y tiempo de respuesta
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const ms = Date.now() - start;
+    const level = res.statusCode >= 500 ? "ERROR" : res.statusCode >= 400 ? "WARN" : "INFO";
+    console.log(`[${level}] ${req.method} ${req.path} → ${res.statusCode} (${ms}ms)`);
+  });
+  next();
+});
+
 // Health check — no expone información del proyecto
 app.get("/", (req, res) => res.json({ status: "ok" }));
 

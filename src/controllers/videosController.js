@@ -5,11 +5,12 @@ const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/co
 // GET /api/videos — público, solo activos ordenados
 async function getVideos(req, res, next) {
   try {
-    const limit = req.query.limit ? Math.min(50, Math.max(1, parseInt(req.query.limit) || 50)) : undefined;
+    // Si no se pasa limit, se devuelven hasta 50 videos (techo de seguridad)
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 50));
     const videos = await prisma.video.findMany({
       where: { activo: true },
       orderBy: [{ orden: "asc" }, { anio: "desc" }],
-      ...(limit ? { take: limit } : {}),
+      take: limit,
     });
     res.json(videos);
   } catch (err) {
@@ -99,7 +100,7 @@ async function actualizarVideo(req, res, next) {
     const data = {};
     if (titulo !== undefined) data.titulo = titulo.trim();
     if (url !== undefined) {
-      if (!isValidHttpsUrl(url)) {
+      if (!isValidHttpsUrl(url.trim())) {
         return res.status(400).json({ error: "url debe ser una URL https válida" });
       }
       data.url = url.trim();

@@ -88,7 +88,7 @@ async function crearDocumento(req, res, next) {
       const check = checkLength(field, value);
       if (!check.ok) return res.status(400).json({ error: check.error });
     }
-    if (!isValidHttpsUrl(link)) {
+    if (!isValidHttpsUrl(link.trim())) {
       return res.status(400).json({ error: "link debe ser una URL https válida" });
     }
 
@@ -141,7 +141,7 @@ async function actualizarDocumento(req, res, next) {
     const data = {};
     if (titulo !== undefined) data.titulo = titulo.trim();
     if (link !== undefined) {
-      if (!isValidHttpsUrl(link)) {
+      if (!isValidHttpsUrl(link.trim())) {
         return res.status(400).json({ error: "link debe ser una URL https válida" });
       }
       data.link = link.trim();

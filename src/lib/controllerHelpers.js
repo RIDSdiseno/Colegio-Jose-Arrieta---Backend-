@@ -60,4 +60,6 @@ function parseOrden(raw, defaultValue = 0) {
   return { ok: true, value: parsed };
 }
 
-module.exports = { assertHasFields, assertValidId, makeDeleteHandler, parseOrden };
+module.exports = { assertHasFields, assertValidId, makeDeleteHandler };
+// parseOrden: utilitario disponible pero no exportado globalmente —
+// cada controller valida `orden` inline para mayor claridad local.

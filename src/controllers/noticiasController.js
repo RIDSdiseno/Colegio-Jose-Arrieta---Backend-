@@ -1,7 +1,22 @@
 const { Prisma } = require("@prisma/client");
+const sanitizeHtml = require("sanitize-html");
 const prisma = require("../lib/prisma");
 const { isValidHttpsUrl, checkLength } = require("../lib/validators");
 const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/controllerHelpers");
+
+// Etiquetas y atributos permitidos para el contenido de noticias
+const SANITIZE_OPTIONS = {
+  allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+    "h1", "h2", "img", "figure", "figcaption", "iframe",
+  ]),
+  allowedAttributes: {
+    ...sanitizeHtml.defaults.allowedAttributes,
+    img: ["src", "alt", "width", "height"],
+    iframe: ["src", "width", "height", "allowfullscreen", "frameborder", "allow"],
+    "*": ["class"],
+  },
+  allowedIframeHostnames: ["www.youtube.com", "player.vimeo.com"],
+};
 
 const CATEGORIAS_VALIDAS = ["General", "Académico", "Deportivo", "Cultural", "Institucional", "Comunidad"];
 
@@ -227,14 +242,14 @@ async function crearNoticia(req, res, next) {
 
     const data = { titulo: titulo.trim(), slug: slug.trim() };
     if (extracto !== undefined) data.extracto = extracto;
-    if (contenido !== undefined) data.contenido = contenido;
+    if (contenido !== undefined) data.contenido = sanitizeHtml(contenido, SANITIZE_OPTIONS);
     if ("imagen" in req.body) {
       const img = req.body.imagen;
       if (img === null || img === "") {
         data.imagen = null;
       } else {
-        if (!isValidHttpsUrl(img)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
-        data.imagen = img;
+        if (!isValidHttpsUrl(img.trim())) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
+        data.imagen = img.trim();
       }
     }
     if (categoria !== undefined) {
@@ -280,7 +295,7 @@ async function actualizarNoticia(req, res, next) {
     if (titulo !== undefined) data.titulo = titulo.trim();
     if (slug !== undefined) data.slug = slug.trim();
     if (extracto !== undefined) data.extracto = extracto;
-    if (contenido !== undefined) data.contenido = contenido;
+    if (contenido !== undefined) data.contenido = sanitizeHtml(contenido, SANITIZE_OPTIONS);
     if (categoria !== undefined) {
       if (!CATEGORIAS_VALIDAS.includes(categoria)) {
         return res.status(400).json({ error: `categoria inválida. Opciones: ${CATEGORIAS_VALIDAS.join(", ")}` });
@@ -301,8 +316,8 @@ async function actualizarNoticia(req, res, next) {
       if (img === null || img === "") {
         data.imagen = null;
       } else {
-        if (!isValidHttpsUrl(img)) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
-        data.imagen = img;
+        if (!isValidHttpsUrl(img.trim())) return res.status(400).json({ error: "imagen debe ser una URL https válida" });
+        data.imagen = img.trim();
       }
     }
 
