@@ -7,13 +7,27 @@ const CATEGORIAS_VALIDAS = [
   "Útiles Escolares",
   "Calendario Escolar",
   "Plan Lector",
+  "Institucional",
+  "Protocolo",
   "Otro",
 ];
 
-// GET /api/documentos?anio=2026&search=termino — público, solo activos
+// GET /api/documentos?anio=2026&search=termino&categoria=Institucional — público, solo activos
 async function getDocumentos(req, res, next) {
   try {
     const search = (req.query.search || "").trim().slice(0, 100);
+    const rawCategoria = (req.query.categoria || "").trim();
+    const categoria = CATEGORIAS_VALIDAS.includes(rawCategoria) ? rawCategoria : "";
+
+    // Si se filtra por categoría, devolver todos los activos de esa categoría (sin filtro de año)
+    if (categoria) {
+      const documentos = await prisma.documento.findMany({
+        where: { activo: true, categoria },
+        orderBy: [{ orden: "asc" }, { titulo: "asc" }],
+      });
+      return res.json(documentos);
+    }
+
     // Si hay búsqueda, ignorar el filtro de año y buscar en todos
     if (search) {
       const documentos = await prisma.documento.findMany({
@@ -26,6 +40,7 @@ async function getDocumentos(req, res, next) {
       });
       return res.json(documentos);
     }
+
     const anio = req.query.anio ? parseInt(req.query.anio) : new Date().getFullYear();
     if (isNaN(anio) || anio < 2000 || anio > 2100) return res.status(400).json({ error: "anio inválido" });
     const documentos = await prisma.documento.findMany({

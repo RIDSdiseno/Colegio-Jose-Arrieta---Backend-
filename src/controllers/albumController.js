@@ -159,7 +159,7 @@ async function agregarFoto(req, res, next) {
     }
 
     const data = { url: url.trim(), albumId: req.params.id };
-    if (caption !== undefined) data.caption = caption;
+    if (caption !== undefined) data.caption = caption.trim();
     if (orden !== undefined) {
       const parsedOrden = parseInt(orden);
       if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });

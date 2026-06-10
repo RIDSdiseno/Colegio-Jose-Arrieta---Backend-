@@ -241,7 +241,7 @@ async function crearNoticia(req, res, next) {
     }
 
     const data = { titulo: titulo.trim(), slug: slug.trim() };
-    if (extracto !== undefined) data.extracto = extracto;
+    if (extracto !== undefined) data.extracto = extracto.trim();
     if (contenido !== undefined) data.contenido = sanitizeHtml(contenido, SANITIZE_OPTIONS);
     if ("imagen" in req.body) {
       const img = req.body.imagen;
@@ -294,7 +294,7 @@ async function actualizarNoticia(req, res, next) {
     const data = {};
     if (titulo !== undefined) data.titulo = titulo.trim();
     if (slug !== undefined) data.slug = slug.trim();
-    if (extracto !== undefined) data.extracto = extracto;
+    if (extracto !== undefined) data.extracto = extracto.trim();
     if (contenido !== undefined) data.contenido = sanitizeHtml(contenido, SANITIZE_OPTIONS);
     if (categoria !== undefined) {
       if (!CATEGORIAS_VALIDAS.includes(categoria)) {
