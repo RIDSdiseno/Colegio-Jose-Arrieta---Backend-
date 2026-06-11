@@ -59,4 +59,20 @@ function checkLength(field, value) {
   return { ok: true };
 }
 
-module.exports = { isValidHttpsUrl, HEX_COLOR, parseEstrellas, checkLength };
+/** Parsea y valida el campo anio (2000–2100). */
+function parseAnio(raw) {
+  const n = parseInt(raw);
+  if (isNaN(n) || n < 2000 || n > 2100)
+    return { ok: false, error: "anio debe ser un número entre 2000 y 2100" };
+  return { ok: true, value: n };
+}
+
+/** Parsea y valida el campo orden (entero). Retorna defaultVal si es undefined. */
+function parseOrden(raw, defaultVal = 0) {
+  if (raw === undefined) return { ok: true, value: defaultVal };
+  const n = parseInt(raw);
+  if (isNaN(n)) return { ok: false, error: "orden debe ser un número entero" };
+  return { ok: true, value: n };
+}
+
+module.exports = { isValidHttpsUrl, HEX_COLOR, parseEstrellas, checkLength, parseAnio, parseOrden };

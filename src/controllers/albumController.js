@@ -1,5 +1,5 @@
 const prisma = require("../lib/prisma");
-const { isValidHttpsUrl, checkLength } = require("../lib/validators");
+const { isValidHttpsUrl, checkLength, parseOrden } = require("../lib/validators");
 const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 // GET /api/albums — público, solo activos
@@ -91,9 +91,9 @@ async function crearAlbum(req, res, next) {
     if (descripcion !== undefined) data.descripcion = descripcion.trim();
     if ("portada" in req.body) data.portada = portada?.trim() || null;
     if (orden !== undefined) {
-      const parsedOrden = parseInt(orden);
-      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
-      data.orden = parsedOrden;
+      const ordenResult = parseOrden(orden);
+      if (!ordenResult.ok) return res.status(400).json({ error: ordenResult.error });
+      data.orden = ordenResult.value;
     }
     if (activo !== undefined) data.activo = Boolean(activo);
 
@@ -129,9 +129,9 @@ async function actualizarAlbum(req, res, next) {
       data.portada = portada?.trim() || null;
     }
     if (orden !== undefined) {
-      const parsedOrden = parseInt(orden);
-      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
-      data.orden = parsedOrden;
+      const ordenResult = parseOrden(orden);
+      if (!ordenResult.ok) return res.status(400).json({ error: ordenResult.error });
+      data.orden = ordenResult.value;
     }
     if (activo !== undefined) data.activo = Boolean(activo);
 
@@ -162,9 +162,9 @@ async function agregarFoto(req, res, next) {
     const data = { url: url.trim(), albumId: req.params.id };
     if (caption !== undefined) data.caption = caption.trim();
     if (orden !== undefined) {
-      const parsedOrden = parseInt(orden);
-      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
-      data.orden = parsedOrden;
+      const ordenResult = parseOrden(orden);
+      if (!ordenResult.ok) return res.status(400).json({ error: ordenResult.error });
+      data.orden = ordenResult.value;
     }
 
     const foto = await prisma.fotoAlbum.create({ data });

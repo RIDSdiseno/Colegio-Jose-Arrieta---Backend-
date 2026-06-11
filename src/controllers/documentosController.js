@@ -1,5 +1,5 @@
 const prisma = require("../lib/prisma");
-const { isValidHttpsUrl, checkLength } = require("../lib/validators");
+const { isValidHttpsUrl, checkLength, parseAnio, parseOrden } = require("../lib/validators");
 const { assertHasFields, assertValidId, makeDeleteHandler } = require("../lib/controllerHelpers");
 
 const CATEGORIAS_VALIDAS = [
@@ -108,30 +108,25 @@ async function crearDocumento(req, res, next) {
       return res.status(400).json({ error: "link debe ser una URL https válida" });
     }
 
-    const parsedAnio = parseInt(anio);
-    if (isNaN(parsedAnio) || parsedAnio < 2000 || parsedAnio > 2100) {
-      return res.status(400).json({ error: "anio debe ser un número entre 2000 y 2100" });
-    }
+    const anioResult = parseAnio(anio);
+    if (!anioResult.ok) return res.status(400).json({ error: anioResult.error });
 
     const cat = categoria || "Otro";
     if (!CATEGORIAS_VALIDAS.includes(cat)) {
       return res.status(400).json({ error: `categoria inválida. Opciones: ${CATEGORIAS_VALIDAS.join(", ")}` });
     }
 
-    let parsedOrden = 0;
-    if (orden !== undefined) {
-      parsedOrden = parseInt(orden);
-      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
-    }
+    const ordenResult = parseOrden(orden);
+    if (!ordenResult.ok) return res.status(400).json({ error: ordenResult.error });
 
     const doc = await prisma.documento.create({
       data: {
         titulo: titulo.trim(),
         categoria: cat,
-        anio: parsedAnio,
+        anio: anioResult.value,
         link: link.trim(),
         activo: activo !== undefined ? Boolean(activo) : true,
-        orden: parsedOrden,
+        orden: ordenResult.value,
       },
     });
     res.status(201).json(doc);
@@ -164,16 +159,14 @@ async function actualizarDocumento(req, res, next) {
     }
     if (activo !== undefined) data.activo = Boolean(activo);
     if (orden !== undefined) {
-      const parsedOrden = parseInt(orden);
-      if (isNaN(parsedOrden)) return res.status(400).json({ error: "orden debe ser un número entero" });
-      data.orden = parsedOrden;
+      const ordenResult = parseOrden(orden);
+      if (!ordenResult.ok) return res.status(400).json({ error: ordenResult.error });
+      data.orden = ordenResult.value;
     }
     if (anio !== undefined) {
-      const parsedAnio = parseInt(anio);
-      if (isNaN(parsedAnio) || parsedAnio < 2000 || parsedAnio > 2100) {
-        return res.status(400).json({ error: "anio debe ser un número entre 2000 y 2100" });
-      }
-      data.anio = parsedAnio;
+      const anioResult = parseAnio(anio);
+      if (!anioResult.ok) return res.status(400).json({ error: anioResult.error });
+      data.anio = anioResult.value;
     }
     if (categoria !== undefined) {
       if (!CATEGORIAS_VALIDAS.includes(categoria)) {
