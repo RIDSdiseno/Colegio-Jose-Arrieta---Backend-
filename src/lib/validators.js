@@ -59,4 +59,4 @@ function checkLength(field, value) {
   return { ok: true };
 }
 
-module.exports = { isValidHttpsUrl, HEX_COLOR, parseEstrellas, checkLength, TEXT_LIMITS };
+module.exports = { isValidHttpsUrl, HEX_COLOR, parseEstrellas, checkLength };
