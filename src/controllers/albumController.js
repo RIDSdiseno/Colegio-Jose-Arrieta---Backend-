@@ -25,6 +25,7 @@ async function getAlbumsAdmin(req, res, next) {
     const albums = await prisma.album.findMany({
       orderBy: { orden: "asc" },
       include: { _count: { select: { fotos: true } } },
+      take: 500,
     });
     res.json(albums);
   } catch (err) {
@@ -60,7 +61,7 @@ async function getFotosAlbum(req, res, next) {
         where: { id: req.params.id, activo: true },
         include: { fotos: { orderBy: { orden: "asc" }, skip, take: limit } },
       }),
-      prisma.fotoAlbum.count({ where: { albumId: req.params.id } }),
+      prisma.fotoAlbum.count({ where: { albumId: req.params.id, album: { activo: true } } }),
     ]);
 
     if (!album) return res.status(404).json({ error: "Álbum no encontrado" });

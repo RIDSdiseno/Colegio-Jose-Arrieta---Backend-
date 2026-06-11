@@ -23,6 +23,7 @@ async function getVideosAdmin(req, res, next) {
   try {
     const videos = await prisma.video.findMany({
       orderBy: [{ orden: "asc" }, { anio: "desc" }],
+      take: 500,
     });
     res.json(videos);
   } catch (err) {

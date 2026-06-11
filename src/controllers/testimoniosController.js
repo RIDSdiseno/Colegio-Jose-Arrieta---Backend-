@@ -8,6 +8,7 @@ async function getTestimonios(req, res, next) {
     const data = await prisma.testimonio.findMany({
       where: { activo: true },
       orderBy: { createdAt: "desc" },
+      take: 50,
     });
     res.json(data);
   } catch (err) {
@@ -34,6 +35,7 @@ async function getTestimoniosAdmin(req, res, next) {
   try {
     const data = await prisma.testimonio.findMany({
       orderBy: { createdAt: "desc" },
+      take: 500,
     });
     res.json(data);
   } catch (err) {

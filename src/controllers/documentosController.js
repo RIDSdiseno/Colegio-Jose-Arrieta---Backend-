@@ -73,6 +73,7 @@ async function getDocumentosAdmin(req, res, next) {
   try {
     const documentos = await prisma.documento.findMany({
       orderBy: [{ anio: "desc" }, { orden: "asc" }, { titulo: "asc" }],
+      take: 500,
     });
     res.json(documentos);
   } catch (err) {
